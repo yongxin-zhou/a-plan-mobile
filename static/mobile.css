@@ -1,0 +1,746 @@
+/* ============================================
+   A计划 - 移动端优化样式
+   ============================================ */
+
+/* === 基础重置 === */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* === 安全区域适配 === */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .mobile-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mobile-header {
+    padding-top: env(safe-area-inset-top);
+  }
+  .chat-input-area {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+}
+
+/* === 移动端头部 === */
+.mobile-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 100;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.mobile-header-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.mobile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-header-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--hour-bg);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.mobile-header-btn:active {
+  background: var(--border);
+}
+
+/* === 底部导航栏 === */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 100;
+  box-shadow: 0 -1px 3px rgba(0,0,0,0.05);
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.nav-item:active {
+  transform: scale(0.95);
+}
+
+.nav-item.active {
+  color: var(--accent);
+}
+
+.nav-item.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 0 0 3px 3px;
+}
+
+.nav-icon {
+  font-size: 22px;
+  margin-bottom: 2px;
+}
+
+.nav-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text2);
+}
+
+.nav-item.active .nav-label {
+  color: var(--accent);
+}
+
+/* === 主内容区域 === */
+.mobile-main {
+  margin-top: 56px;
+  margin-bottom: 60px;
+  min-height: calc(100vh - 116px);
+  padding: 12px;
+  background: var(--bg);
+}
+
+/* === 卡片样式优化 === */
+.mobile-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.mobile-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* === 表单元素优化 === */
+.mobile-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 16px;
+  font-family: inherit;
+  background: var(--card);
+  color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.mobile-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.1);
+}
+
+.mobile-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 16px;
+  font-family: inherit;
+  background: var(--card);
+  color: var(--text);
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.mobile-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.1);
+}
+
+/* === 按钮优化 === */
+.mobile-btn {
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.mobile-btn:active {
+  transform: scale(0.97);
+}
+
+.mobile-btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.mobile-btn-primary:active {
+  background: var(--accent2);
+}
+
+.mobile-btn-secondary {
+  background: var(--hour-bg);
+  color: var(--text);
+}
+
+.mobile-btn-danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* === 周计划看板移动端 === */
+.mobile-week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  margin-bottom: 12px;
+}
+
+.mobile-week-nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.mobile-week-info {
+  text-align: center;
+  flex: 1;
+}
+
+.mobile-week-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.mobile-week-date {
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 2px;
+}
+
+/* === 时间块移动端 === */
+.mobile-time-grid {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -12px;
+  padding: 0 12px;
+}
+
+.mobile-time-block {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin-bottom: 6px;
+  border-left: 3px solid;
+  background: var(--card);
+}
+
+.mobile-time-block.focus {
+  border-left-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.mobile-time-block.rest {
+  border-left-color: #10b981;
+  background: #ecfdf5;
+}
+
+/* === 聊天界面移动端 === */
+.mobile-chat-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 116px);
+}
+
+.mobile-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobile-chat-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 15px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.mobile-chat-bubble.me {
+  align-self: flex-end;
+  background: var(--accent);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.mobile-chat-bubble.other {
+  align-self: flex-start;
+  background: var(--hour-bg);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+
+.mobile-chat-bubble .time {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 4px;
+  display: block;
+}
+
+.chat-input-area {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+}
+
+.chat-input-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.chat-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 15px;
+  font-family: inherit;
+  background: var(--hour-bg);
+  color: var(--text);
+  resize: none;
+  max-height: 100px;
+}
+
+.chat-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.chat-send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.chat-send-btn:active {
+  transform: scale(0.95);
+}
+
+/* === 语音按钮 === */
+.voice-record-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.voice-record-btn.recording {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: white;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+}
+
+/* === 夫妻目标移动端 === */
+.mobile-goal-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-left: 4px solid var(--accent);
+}
+
+.mobile-goal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.mobile-goal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.status-proposed { background: #fef3c7; color: #92400e; }
+.status-discussing { background: #dbeafe; color: #1e40af; }
+.status-aligned { background: #d1fae5; color: #065f46; }
+.status-in_progress { background: #e0e7ff; color: #3730a3; }
+.status-done { background: #f3f4f6; color: #6b7280; }
+
+/* === 年度规划移动端 === */
+.mobile-annual-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--card);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+
+.mobile-drag-handle {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text2);
+  font-size: 18px;
+  cursor: grab;
+}
+
+.mobile-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* === 经期追踪移动端 === */
+.mobile-cycle-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.mobile-cycle-phase {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.phase-menstrual { background: #fce4ec; color: #c62828; }
+.phase-follicular { background: #e8f5e9; color: #2e7d32; }
+.phase-ovulatory { background: #fff3e0; color: #e65100; }
+.phase-luteal { background: #f3e5f5; color: #7b1fa2; }
+
+/* === 设置页面移动端 === */
+.mobile-settings-group {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.mobile-settings-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.mobile-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-settings-row:last-child {
+  border-bottom: none;
+}
+
+.mobile-settings-label {
+  font-size: 15px;
+  color: var(--text);
+}
+
+.mobile-settings-value {
+  font-size: 15px;
+  color: var(--text2);
+}
+
+/* === 加载状态 === */
+.mobile-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--text2);
+}
+
+.mobile-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* === 空状态 === */
+.mobile-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text2);
+}
+
+.mobile-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.mobile-empty-text {
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* === Toast 通知 === */
+.mobile-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.mobile-toast.show {
+  opacity: 1;
+}
+
+/* === 手势提示 === */
+.swipe-hint {
+  text-align: center;
+  padding: 8px;
+  font-size: 12px;
+  color: var(--text2);
+}
+
+/* === 选项卡移动端 === */
+.mobile-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.mobile-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-tab {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mobile-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* === 滑动删除 === */
+.swipe-delete {
+  position: relative;
+  overflow: hidden;
+}
+
+.swipe-delete-content {
+  transition: transform 0.3s;
+}
+
+.swipe-delete-action {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  background: #ef4444;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* === 浮动操作按钮 === */
+.fab {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  cursor: pointer;
+  z-index: 90;
+  transition: transform 0.2s;
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+/* === 响应式断点 === */
+@media (min-width: 768px) {
+  .mobile-header,
+  .mobile-bottom-nav {
+    display: none;
+  }
+
+  .mobile-main {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
+
+/* === 深色模式支持（可选） === */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a1a;
+    --card: #2d2d2d;
+    --border: #404040;
+    --text: #ffffff;
+    --text2: #a0a0a0;
+    --hour-bg: #333333;
+  }
+}
+
+/* === 动画优化 === */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

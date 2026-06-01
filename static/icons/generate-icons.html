@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>生成图标</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    canvas { border: 1px solid #ccc; margin: 10px; }
+    .instructions { background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>A计划 - 图标生成器</h1>
+
+  <div class="instructions">
+    <h3>使用说明：</h3>
+    <ol>
+      <li>打开此文件 (generate-icons.html)</li>
+      <li>点击下方按钮生成图标</li>
+      <li>右键点击图标 → "图片另存为" 保存</li>
+      <li>保存为 icon-192.png 和 icon-512.png</li>
+    </ol>
+  </div>
+
+  <canvas id="canvas192" width="192" height="192"></canvas>
+  <canvas id="canvas512" width="512" height="512"></canvas>
+
+  <br>
+  <button onclick="generateIcons()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
+    生成图标
+  </button>
+
+  <script>
+    function drawIcon(canvas, size) {
+      const ctx = canvas.getContext('2d');
+
+      // 背景
+      ctx.fillStyle = '#b8860b';
+      ctx.beginPath();
+      ctx.roundRect(0, 0, size, size, size * 0.2);
+      ctx.fill();
+
+      // 文字 "A"
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${size * 0.6}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('A', size / 2, size / 2);
+
+      // 装饰线条
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = size * 0.02;
+      ctx.beginPath();
+      ctx.moveTo(size * 0.2, size * 0.75);
+      ctx.lineTo(size * 0.8, size * 0.75);
+      ctx.stroke();
+    }
+
+    function generateIcons() {
+      const canvas192 = document.getElementById('canvas192');
+      const canvas512 = document.getElementById('canvas512');
+
+      drawIcon(canvas192, 192);
+      drawIcon(canvas512, 512);
+
+      alert('图标已生成！请右键点击图标保存。\n\n192x192 用于手机桌面\n512x512 用于启动画面');
+    }
+
+    // 自动绘制预览
+    generateIcons();
+  </script>
+</body>
+</html>
