@@ -366,8 +366,9 @@ class AnnualGoalData(BaseModel):
 # ─── 首页 ───
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/favicon.ico", response_class=HTMLResponse)
 def index(request: Request):
-    return templates.TemplateResponse(request, "index.html")
+    return templates.TemplateResponse(name="index.html", request=request)
 
 
 # ─── 认证路由 ───
