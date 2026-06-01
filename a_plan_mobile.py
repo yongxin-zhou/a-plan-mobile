@@ -369,7 +369,7 @@ class AnnualGoalData(BaseModel):
 @app.get("/favicon.ico", response_class=HTMLResponse)
 def index(request: Request):
     try:
-        return templates.TemplateResponse(name="index.html", request=request)
+        return templates.TemplateResponse("index.html", {"request": request})
     except Exception as e:
         from fastapi.responses import PlainTextResponse
         return PlainTextResponse(f"Template error: {str(e)}")
