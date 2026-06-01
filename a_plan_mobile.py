@@ -710,7 +710,7 @@ def send_chat(data: dict, request: Request, db: Session = Depends(get_db)):
 
 
 @app.get("/api/chat/messages")
-def get_chat_messages(since: int = 0, request: Request, db: Session = Depends(get_db)):
+def get_chat_messages(request: Request, since: int = 0, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
         raise HTTPException(401, "未登录")
