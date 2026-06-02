@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>A计划</title>
+<meta name="theme-color" content="#b8860b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/static/manifest.json">
+<style>
+:root {
+  --bg: #f5f5f5;
+  --card: #ffffff;
+  --border: #e8e8e8;
+  --text: #1a1a1a;
+  --text2: #888888;
+  --accent: #b8860b;
+  --accent-light: #fdf6e3;
+  --success: #52c41a;
+  --danger: #ff4d4f;
+  --radius: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* === 安全区域 === */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
+  .page-content { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
+}
+
+/* === 页面结构 === */
+.page { display: none; min-height: 100vh; padding-bottom: 70px; }
+.page.active { display: block; }
+
+/* === 顶部栏 === */
+.top-bar {
+  position: sticky;
+  top: 0;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 100;
+}
+.top-bar-title { font-size: 18px; font-weight: 600; }
+.top-bar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* === 底部导航 === */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 100;
+}
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: var(--text2);
+  transition: color 0.2s;
+}
+.nav-item.active { color: var(--accent); }
+.nav-icon { font-size: 24px; margin-bottom: 2px; }
+.nav-label { font-size: 10px; }
+
+/* === 卡片 === */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 12px 16px;
+}
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+/* === 按钮 === */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--accent); color: white; }
+.btn-secondary { background: var(--bg); color: var(--text); }
+.btn-danger { background: var(--danger); color: white; }
+
+/* === 输入框 === */
+.input-group { margin-bottom: 16px; }
+.input-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 16px;
+  background: var(--card);
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 16px;
+  background: var(--card);
+  color: var(--text);
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+}
+
+/* === 登录页面 === */
+.login-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: linear-gradient(135deg, #fdf6e3 0%, #f5f5f5 100%);
+}
+.login-logo {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+.login-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.login-subtitle {
+  font-size: 14px;
+  color: var(--text2);
+  margin-bottom: 32px;
+}
+.login-form {
+  width: 100%;
+  max-width: 360px;
+}
+.login-tabs {
+  display: flex;
+  margin-bottom: 24px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 4px;
+}
+.login-tab {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.login-tab.active {
+  background: var(--card);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.login-error {
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  color: var(--danger);
+  font-size: 14px;
+  display: none;
+}
+
+/* === 周计划页面 === */
+.week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+.week-nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 18px;
+  cursor: pointer;
+}
+.week-info { text-align: center; }
+.week-title { font-size: 16px; font-weight: 600; }
+.week-date { font-size: 12px; color: var(--text2); }
+
+/* === 时间块 === */
+.time-blocks {
+  padding: 0 16px;
+}
+.time-block {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: var(--card);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border-left: 4px solid;
+}
+.time-block.focus { border-left-color: #1890ff; background: #e6f7ff; }
+.time-block.rest { border-left-color: #52c41a; background: #f6ffed; }
+.time-block-label { flex: 1; font-size: 14px; }
+.time-block-time { font-size: 12px; color: var(--text2); }
+
+/* === 快速添加 === */
+.quick-add {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.quick-add-btn {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 13px;
+  cursor: pointer;
+}
+.quick-add-btn.focus { background: #e6f7ff; border-color: #1890ff; color: #1890ff; }
+.quick-add-btn.rest { background: #f6ffed; border-color: #52c41a; color: #52c41a; }
+
+/* === Top 3 === */
+.top3-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.top3-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  margin-right: 12px;
+}
+.top3-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  outline: none;
+}
+
+/* === 年度规划 === */
+.annual-item {
+  display: flex;
+  align-items: center;
+  padding: 14px;
+  background: var(--card);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+.annual-num {
+  width: 24px;
+  font-size: 14px;
+  color: var(--text2);
+  margin-right: 12px;
+}
+.annual-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  outline: none;
+}
+.annual-delete {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #fff2f0;
+  color: var(--danger);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* === 经期追踪 === */
+.cycle-status {
+  text-align: center;
+  padding: 24px;
+}
+.cycle-phase {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+.phase-menstrual { background: #fff1f0; color: #cf1322; }
+.phase-follicular { background: #f6ffed; color: #389e0d; }
+.phase-ovulatory { background: #fff7e6; color: #d46b08; }
+.phase-luteal { background: #f9f0ff; color: #722ed1; }
+
+.cycle-day-num {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.cycle-day-label {
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.cycle-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cycle-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cycle-label {
+  width: 80px;
+  font-size: 14px;
+  color: var(--text2);
+}
+.cycle-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+/* === 五个一/自知/纪律 === */
+.principle-item {
+  padding: 14px;
+  background: var(--bg);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.principle-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.principle-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  outline: none;
+  resize: none;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+/* === 设置 === */
+.settings-group {
+  margin-bottom: 24px;
+}
+.settings-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-item:last-child { border-bottom: none; }
+.settings-label { font-size: 15px; }
+.settings-value {
+  font-size: 15px;
+  color: var(--text2);
+}
+
+/* === Modal === */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 24px;
+  width: 90%;
+  max-width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* === Toast === */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 300;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* === 加载状态 === */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--text2);
+}
+
+/* === 空状态 === */
+.empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--text2);
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<!-- ========== 登录页面 ========== -->
+<div id="loginPage" class="login-page">
+  <div class="login-logo">📅</div>
+  <div class="login-title">A计划</div>
+  <div class="login-subtitle">个人时间管理与夫妻协作</div>
+
+  <div class="login-form">
+    <div class="login-tabs">
+      <div class="login-tab active" onclick="switchLoginTab('login')">登录</div>
+      <div class="login-tab" onclick="switchLoginTab('register')">注册</div>
+    </div>
+
+    <div id="loginError" class="login-error"></div>
+
+    <div class="input-group">
+      <label class="input-label">用户名</label>
+      <input id="loginUsername" type="text" class="input" placeholder="请输入用户名">
+    </div>
+
+    <div class="input-group">
+      <label class="input-label">密码</label>
+      <input id="loginPassword" type="password" class="input" placeholder="请输入密码">
+    </div>
+
+    <div id="displayNameGroup" class="input-group" style="display:none;">
+      <label class="input-label">显示名称</label>
+      <input id="loginDisplayName" type="text" class="input" placeholder="你希望被怎么称呼">
+    </div>
+
+    <button id="loginBtn" onclick="doLogin()" class="btn btn-primary" style="margin-top:8px;">登录</button>
+  </div>
+</div>
+
+<!-- ========== 主应用 ========== -->
+<div id="appPage" style="display:none;">
+
+  <!-- 底部导航 -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchPage('week', this)">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">周计划</span>
+    </div>
+    <div class="nav-item" onclick="switchPage('annual', this)">
+      <span class="nav-icon">🎯</span>
+      <span class="nav-label">年度</span>
+    </div>
+    <div class="nav-item" onclick="switchPage('cycle', this)">
+      <span class="nav-icon">🩸</span>
+      <span class="nav-label">经期</span>
+    </div>
+    <div class="nav-item" onclick="switchPage('more', this)">
+      <span class="nav-icon">☰</span>
+      <span class="nav-label">更多</span>
+    </div>
+  </div>
+
+  <!-- ========== 周计划页面 ========== -->
+  <div id="page-week" class="page active">
+    <div class="top-bar">
+      <div class="top-bar-title">📅 周计划</div>
+      <div style="display:flex;gap:8px;">
+        <button class="top-bar-btn" onclick="saveAll()">💾</button>
+        <button class="top-bar-btn" onclick="showSettings()">⚙️</button>
+      </div>
+    </div>
+
+    <div class="week-nav">
+      <button class="week-nav-btn" onclick="navWeek(-1)">←</button>
+      <div class="week-info">
+        <div class="week-title" id="weekTitle"></div>
+        <div class="week-date" id="weekDate"></div>
+      </div>
+      <button class="week-nav-btn" onclick="navWeek(1)">→</button>
+    </div>
+
+    <!-- Top 3 -->
+    <div class="card">
+      <div class="card-title">🎯 Top 3 优先级</div>
+      <div class="top3-item">
+        <div class="top3-num">1</div>
+        <input id="top3_1" class="top3-input" placeholder="本周第一优先">
+      </div>
+      <div class="top3-item">
+        <div class="top3-num">2</div>
+        <input id="top3_2" class="top3-input" placeholder="本周第二优先">
+      </div>
+      <div class="top3-item">
+        <div class="top3-num">3</div>
+        <input id="top3_3" class="top3-input" placeholder="本周第三优先">
+      </div>
+    </div>
+
+    <!-- 本周主题 -->
+    <div class="card">
+      <div class="card-title">🏷️ 本周主题</div>
+      <input id="theme" class="input" placeholder="如：世事练达">
+    </div>
+
+    <!-- 快速添加时间块 -->
+    <div class="card">
+      <div class="card-title">⏰ 时间块</div>
+      <div class="quick-add">
+        <button class="quick-add-btn focus" onclick="addTimeBlock('focus', 90)">+90min 专注</button>
+        <button class="quick-add-btn focus" onclick="addTimeBlock('focus', 60)">+60min 专注</button>
+        <button class="quick-add-btn rest" onclick="addTimeBlock('rest', 15)">+15min 休息</button>
+      </div>
+      <div id="timeBlocks" class="time-blocks"></div>
+    </div>
+
+    <!-- 纪律 -->
+    <div class="card">
+      <div class="card-title">📋 本周纪律</div>
+      <textarea id="rules" class="textarea" placeholder="本周要遵守的原则..."></textarea>
+    </div>
+
+    <!-- 运动 -->
+    <div class="card">
+      <div class="card-title">🏃 运动目标</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:14px;">目标</span>
+        <input id="exerciseTarget" type="number" class="input" value="100" style="width:80px;">
+        <span style="font-size:14px;">分钟</span>
+      </div>
+      <div style="margin-top:12px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:4px;">
+          <span>已完成</span>
+          <span id="exerciseProgress">0 / 100 分钟</span>
+        </div>
+        <div style="background:var(--bg);border-radius:4px;height:8px;overflow:hidden;">
+          <div id="exerciseBar" style="background:var(--success);height:100%;width:0%;transition:width 0.3s;"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+        <button class="quick-add-btn" onclick="addExercise(15)">+15min</button>
+        <button class="quick-add-btn" onclick="addExercise(30)">+30min</button>
+        <button class="quick-add-btn" onclick="addExercise(60)">+60min</button>
+      </div>
+    </div>
+
+    <!-- 周备忘 -->
+    <div class="card">
+      <div class="card-title">📝 周备忘</div>
+      <textarea id="weeklyNote" class="textarea" placeholder="其他备忘事项..."></textarea>
+    </div>
+  </div>
+
+  <!-- ========== 年度规划页面 ========== -->
+  <div id="page-annual" class="page">
+    <div class="top-bar">
+      <div class="top-bar-title">🎯 年度规划</div>
+      <button class="top-bar-btn" onclick="addAnnualItem()">+</button>
+    </div>
+
+    <div id="annualList" style="padding:12px 16px;"></div>
+
+    <div style="padding:16px;">
+      <button onclick="saveAnnual()" class="btn btn-primary">💾 保存</button>
+    </div>
+  </div>
+
+  <!-- ========== 经期追踪页面 ========== -->
+  <div id="page-cycle" class="page">
+    <div class="top-bar">
+      <div class="top-bar-title">🩸 经期追踪</div>
+      <button class="top-bar-btn" onclick="showCycleForm()">+</button>
+    </div>
+
+    <div class="card">
+      <div class="cycle-status">
+        <div id="cyclePhase" class="cycle-phase phase-menstrual">加载中...</div>
+        <div id="cycleDayNum" class="cycle-day-num">-</div>
+        <div id="cycleDayLabel" class="cycle-day-label">等待数据</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💡 各阶段建议</div>
+      <div style="font-size:13px;line-height:1.8;">
+        <div style="padding:8px;background:#fff1f0;border-radius:6px;margin-bottom:6px;"><strong>经期：</strong>多休息，避免劳累</div>
+        <div style="padding:8px;background:#f6ffed;border-radius:6px;margin-bottom:6px;"><strong>卵泡期：</strong>精力充沛，适合规划</div>
+        <div style="padding:8px;background:#fff7e6;border-radius:6px;margin-bottom:6px;"><strong>排卵期：</strong>情绪积极，适合约会</div>
+        <div style="padding:8px;background:#f9f0ff;border-radius:6px;"><strong>黄体期：</strong>多包容，避免争论</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 历史记录</div>
+      <div id="cycleHistory"></div>
+    </div>
+  </div>
+
+  <!-- ========== 更多页面 ========== -->
+  <div id="page-more" class="page">
+    <div class="top-bar">
+      <div class="top-bar-title">☰ 更多功能</div>
+    </div>
+
+    <div style="padding:12px 16px;">
+      <!-- 菜单项 -->
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="switchPage('principles', null)">
+          📜 五个一 <span style="float:right;color:var(--text2);">›</span>
+        </div>
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="switchPage('selfknow', null)">
+          📖 人必要自知 <span style="float:right;color:var(--text2);">›</span>
+        </div>
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="switchPage('couple-goals', null)">
+          🎯 夫妻目标 <span style="float:right;color:var(--text2);">›</span>
+        </div>
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="switchPage('agreements', null)">
+          🤝 夫妻约定 <span style="float:right;color:var(--text2);">›</span>
+        </div>
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="showSettings()">
+          ⚙️ 设置 <span style="float:right;color:var(--text2);">›</span>
+        </div>
+        <div style="padding:14px 16px;cursor:pointer;color:var(--danger);" onclick="doLogout()">
+          🚪 退出登录
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 五个一页面 ========== -->
+  <div id="page-principles" class="page">
+    <div class="top-bar">
+      <div class="top-bar-title">📜 五个一</div>
+      <button class="top-bar-btn" onclick="switchPage('more', null)">←</button>
+    </div>
+    <div id="principlesList" style="padding:12px 16px;"></div>
+    <div style="padding:16px;">
+      <button onclick="savePrinciples()" class="btn btn-primary">💾 保存</button>
+    </div>
+  </div>
+
+  <!-- ========== 自知页面 ========== -->
+  <div id="page-selfknow" class="page">
+    <div class="top-bar">
+      <div class="top-bar-title">📖 人必要自知</div>
+      <button class="top-bar-btn" onclick="switchPage('more', null)">←</button>
+    </div>
+    <div id="selfknowList" style="padding:12px 16px;"></div>
+    <div style="padding:16px;">
+      <button onclick="saveSelfKnowledge()" class="btn btn-primary">💾 保存</button>
+    </div>
+  </div>
+
+  <!-- ========== 夫妻目标页面 ========== -->
+  <div id="page-couple-goals" class="page">
+    <div class="top-bar">
+      <div class="top-bar-title">🎯 夫妻目标</div>
+      <button class="top-bar-btn" onclick="switchPage('more', null)">←</button>
+    </div>
+    <div id="coupleGoalsList" style="padding:12px 16px;"></div>
+  </div>
+
+  <!-- ========== 夫妻约定页面 ========== -->
+  <div id="page-agreements" class="page">
+    <div class="top-bar">
+      <div class="top-bar-title">🤝 夫妻约定</div>
+      <button class="top-bar-btn" onclick="switchPage('more', null)">←</button>
+    </div>
+    <div id="agreementsList" style="padding:12px 16px;"></div>
+  </div>
+</div>
+
+<!-- ========== 设置弹窗 ========== -->
+<div id="settingsModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">⚙️ 设置</div>
+
+    <div class="settings-group">
+      <div class="settings-title">⏰ 工作时间</div>
+      <div class="settings-item">
+        <span class="settings-label">最早到岗</span>
+        <select id="setWorkStart" class="input" style="width:100px;">
+          <option value="07:00">7:00</option>
+          <option value="07:30">7:30</option>
+          <option value="08:00">8:00</option>
+          <option value="08:30">8:30</option>
+          <option value="09:00">9:00</option>
+        </select>
+      </div>
+      <div class="settings-item">
+        <span class="settings-label">每日工时</span>
+        <input id="setWorkHours" type="number" class="input" value="8.5" style="width:80px;">
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <div class="settings-title">👤 账户</div>
+      <div class="settings-item">
+        <span class="settings-label">我的邀请码</span>
+        <span id="myInviteCode" class="settings-value">-</span>
+      </div>
+      <div class="settings-item">
+        <span class="settings-label">绑定伙伴</span>
+        <div style="display:flex;gap:8px;">
+          <input id="partnerCode" class="input" placeholder="输入邀请码" style="width:120px;">
+          <button onclick="bindPartner()" class="btn btn-primary" style="width:auto;padding:10px 16px;">绑定</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button onclick="saveSettings()" class="btn btn-primary" style="flex:1;">保存</button>
+      <button onclick="closeSettings()" class="btn btn-secondary" style="flex:1;">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 经期记录弹窗 ========== -->
+<div id="cycleModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">➕ 记录经期</div>
+    <div class="cycle-form">
+      <div class="cycle-row">
+        <span class="cycle-label">开始日期</span>
+        <input id="cycleStartDate" type="date" class="cycle-input">
+      </div>
+      <div class="cycle-row">
+        <span class="cycle-label">经期天数</span>
+        <input id="cyclePeriodLength" type="number" class="cycle-input" value="5">
+      </div>
+      <div class="cycle-row">
+        <span class="cycle-label">周期天数</span>
+        <input id="cycleLength" type="number" class="cycle-input" value="28">
+      </div>
+      <div class="cycle-row">
+        <span class="cycle-label">备注</span>
+        <input id="cycleNotes" type="text" class="cycle-input" placeholder="情绪、身体状态...">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button onclick="saveCycleRecord()" class="btn btn-primary" style="flex:1;">保存</button>
+      <button onclick="closeCycleForm()" class="btn btn-secondary" style="flex:1;">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+// ─── 全局变量 ───
+let token = localStorage.getItem('token');
+let currentUser = null;
+let currentYear, currentWeek;
+let weekData = {};
+let timeBlocks = [];
+let exerciseTotal = 0;
+
+// ─── 初始化 ───
+async function init() {
+  if (token) {
+    const res = await api('/api/auth/me');
+    if (res.user) {
+      currentUser = res.user;
+      showApp();
+    } else {
+      showLogin();
+    }
+  } else {
+    showLogin();
+  }
+}
+
+// ─── API 请求 ───
+async function api(url, options = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  try {
+    const res = await fetch(url, { ...options, headers: { ...headers, ...options.headers } });
+    if (res.status === 401) { showLogin(); return {}; }
+    return await res.json();
+  } catch (e) {
+    console.error('API Error:', e);
+    return {};
+  }
+}
+
+// ─── 页面切换 ───
+function showLogin() {
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('appPage').style.display = 'none';
+}
+
+function showApp() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('appPage').style.display = 'block';
+  initWeek();
+  loadSettings();
+}
+
+function switchPage(pageName, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const page = document.getElementById('page-' + pageName);
+  if (page) page.classList.add('active');
+
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+
+  // 加载数据
+  if (pageName === 'annual') loadAnnual();
+  if (pageName === 'cycle') loadCycle();
+  if (pageName === 'principles') loadPrinciples();
+  if (pageName === 'selfknow') loadSelfKnowledge();
+  if (pageName === 'couple-goals') loadCoupleGoals();
+  if (pageName === 'agreements') loadAgreements();
+}
+
+// ─── 登录/注册 ───
+let loginMode = 'login';
+
+function switchLoginTab(mode) {
+  loginMode = mode;
+  document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('displayNameGroup').style.display = mode === 'register' ? 'block' : 'none';
+  document.getElementById('loginBtn').textContent = mode === 'login' ? '登录' : '注册';
+  document.getElementById('loginError').style.display = 'none';
+}
+
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const displayName = document.getElementById('loginDisplayName').value.trim();
+
+  if (!username || !password) {
+    showError('请填写用户名和密码');
+    return;
+  }
+
+  const url = loginMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+  const body = { username, password };
+  if (loginMode === 'register') body.display_name = displayName || username;
+
+  const res = await api(url, { method: 'POST', body: JSON.stringify(body) });
+
+  if (res.token) {
+    token = res.token;
+    localStorage.setItem('token', token);
+    currentUser = res.user;
+    showApp();
+  } else {
+    showError(res.detail || '登录失败');
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function doLogout() {
+  token = null;
+  currentUser = null;
+  localStorage.removeItem('token');
+  showLogin();
+}
+
+// ─── 周计划 ───
+function getWeekNumber(d) {
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function getWeekDates(year, week) {
+  const jan4 = new Date(year, 0, 4);
+  const startOfWeek1 = new Date(jan4);
+  startOfWeek1.setDate(jan4.getDate() - (jan4.getDay() || 7) + 1);
+  const monday = new Date(startOfWeek1);
+  monday.setDate(startOfWeek1.getDate() + (week - 1) * 7);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return { monday, sunday };
+}
+
+function initWeek() {
+  const now = new Date();
+  currentYear = now.getFullYear();
+  currentWeek = getWeekNumber(now);
+  loadWeek();
+}
+
+function navWeek(dir) {
+  currentWeek += dir;
+  if (currentWeek < 1) { currentWeek = 52; currentYear--; }
+  if (currentWeek > 52) { currentWeek = 1; currentYear++; }
+  loadWeek();
+}
+
+async function loadWeek() {
+  const res = await api(`/api/week/${currentYear}/${currentWeek}`);
+  weekData = res.plan || {};
+  timeBlocks = res.time_blocks || [];
+
+  const { monday, sunday } = getWeekDates(currentYear, currentWeek);
+  document.getElementById('weekTitle').textContent = `第 ${currentWeek} 周`;
+  document.getElementById('weekDate').textContent = `${monday.getMonth()+1}/${monday.getDate()} - ${sunday.getMonth()+1}/${sunday.getDate()}`;
+
+  // Top 3
+  const top3 = (weekData.top3 || '').split('\n');
+  document.getElementById('top3_1').value = top3[0] || '';
+  document.getElementById('top3_2').value = top3[1] || '';
+  document.getElementById('top3_3').value = top3[2] || '';
+
+  document.getElementById('theme').value = weekData.theme || '';
+  document.getElementById('rules').value = weekData.rules || '';
+  document.getElementById('weeklyNote').value = weekData.weekly_note || '';
+
+  // 运动
+  try {
+    const exData = JSON.parse(weekData.exercise_data || '{}');
+    exerciseTotal = Object.values(exData).reduce((a, b) => a + (parseInt(b) || 0), 0);
+  } catch { exerciseTotal = 0; }
+  updateExerciseUI();
+
+  renderTimeBlocks();
+}
+
+function renderTimeBlocks() {
+  const container = document.getElementById('timeBlocks');
+  if (!timeBlocks.length) {
+    container.innerHTML = '<div class="empty" style="padding:20px;"><div class="empty-icon">⏰</div><div>暂无时间块，点击上方添加</div></div>';
+    return;
+  }
+  container.innerHTML = timeBlocks.map((b, i) => `
+    <div class="time-block ${b.block_type || 'focus'}">
+      <div class="time-block-label">${b.label || (b.block_type === 'rest' ? '休息' : '专注')}</div>
+      <div class="time-block-time">${b.duration_minutes || 60}min</div>
+      <button onclick="removeTimeBlock(${i})" style="background:none;border:none;color:var(--danger);font-size:18px;cursor:pointer;">×</button>
+    </div>
+  `).join('');
+}
+
+function addTimeBlock(type, duration) {
+  timeBlocks.push({
+    block_type: type,
+    duration_minutes: duration,
+    label: type === 'rest' ? '休息' : '专注',
+    start_minutes: 540 + timeBlocks.length * 105
+  });
+  renderTimeBlocks();
+}
+
+function removeTimeBlock(idx) {
+  timeBlocks.splice(idx, 1);
+  renderTimeBlocks();
+}
+
+// ─── 运动 ───
+function addExercise(min) {
+  exerciseTotal += min;
+  updateExerciseUI();
+}
+
+function updateExerciseUI() {
+  const target = parseInt(document.getElementById('exerciseTarget')?.value) || 100;
+  const pct = Math.min(100, Math.round(exerciseTotal / target * 100));
+  document.getElementById('exerciseProgress').textContent = `${exerciseTotal} / ${target} 分钟`;
+  document.getElementById('exerciseBar').style.width = pct + '%';
+}
+
+// ─── 保存 ───
+async function saveAll() {
+  const top3 = [
+    document.getElementById('top3_1').value,
+    document.getElementById('top3_2').value,
+    document.getElementById('top3_3').value
+  ].filter(Boolean).join('\n');
+
+  await api(`/api/week/${currentYear}/${currentWeek}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      year: currentYear, week_number: currentWeek,
+      top3, theme: document.getElementById('theme').value,
+      rules: document.getElementById('rules').value,
+      weekly_note: document.getElementById('weeklyNote').value,
+      exercise_data: JSON.stringify({ total: exerciseTotal })
+    })
+  });
+
+  await api(`/api/week/${currentYear}/${currentWeek}/time-blocks`, {
+    method: 'POST',
+    body: JSON.stringify({ blocks: timeBlocks.map(b => ({ day_index: 0, hour: 9, slot: 'up', content: b.label || '专注' })) })
+  });
+
+  showToast('保存成功！');
+}
+
+// ─── 年度规划 ───
+let annualItems = [];
+
+async function loadAnnual() {
+  const items = await api(`/api/annual/${currentYear}`);
+  annualItems = items || [];
+  renderAnnual();
+}
+
+function renderAnnual() {
+  const container = document.getElementById('annualList');
+  if (!annualItems.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">🎯</div><div>暂无年度目标，点击右上角添加</div></div>';
+    return;
+  }
+  container.innerHTML = annualItems.map((item, i) => `
+    <div class="annual-item">
+      <span class="annual-num">${i + 1}</span>
+      <input class="annual-input" value="${item.content || ''}" onchange="annualItems[${i}].content=this.value">
+      <button class="annual-delete" onclick="annualItems.splice(${i},1);renderAnnual();">×</button>
+    </div>
+  `).join('');
+}
+
+function addAnnualItem() {
+  annualItems.push({ content: '', category: '', order_index: annualItems.length });
+  renderAnnual();
+}
+
+async function saveAnnual() {
+  await api(`/api/annual/${currentYear}`, {
+    method: 'POST',
+    body: JSON.stringify(annualItems.filter(i => i.content.trim()))
+  });
+  showToast('保存成功！');
+}
+
+// ─── 经期追踪 ───
+let cycles = [];
+
+async function loadCycle() {
+  cycles = await api('/api/cycle');
+  renderCycleStatus();
+  renderCycleHistory();
+}
+
+function renderCycleStatus() {
+  if (!cycles.length) {
+    document.getElementById('cyclePhase').textContent = '暂无记录';
+    document.getElementById('cycleDayNum').textContent = '-';
+    document.getElementById('cycleDayLabel').textContent = '点击右上角 + 添加记录';
+    return;
+  }
+
+  const last = cycles[0];
+  const start = new Date(last.start_date);
+  const today = new Date();
+  const dayInCycle = Math.floor((today - start) / 86400000) + 1;
+  const periodLen = last.period_length || 5;
+  const cycleLen = last.cycle_length || 28;
+
+  let phase, phaseClass;
+  if (dayInCycle <= periodLen) {
+    phase = '经期'; phaseClass = 'phase-menstrual';
+  } else if (dayInCycle <= 13) {
+    phase = '卵泡期'; phaseClass = 'phase-follicular';
+  } else if (dayInCycle <= 15) {
+    phase = '排卵期'; phaseClass = 'phase-ovulatory';
+  } else if (dayInCycle <= cycleLen) {
+    phase = '黄体期'; phaseClass = 'phase-luteal';
+  } else {
+    phase = '下一周期'; phaseClass = 'phase-menstrual';
+  }
+
+  document.getElementById('cyclePhase').textContent = phase;
+  document.getElementById('cyclePhase').className = 'cycle-phase ' + phaseClass;
+  document.getElementById('cycleDayNum').textContent = dayInCycle > cycleLen ? dayInCycle - cycleLen : dayInCycle;
+  document.getElementById('cycleDayLabel').textContent = `周期第 ${dayInCycle > cycleLen ? dayInCycle - cycleLen : dayInCycle} 天`;
+}
+
+function renderCycleHistory() {
+  const container = document.getElementById('cycleHistory');
+  if (!cycles.length) {
+    container.innerHTML = '<div class="empty" style="padding:16px;">暂无记录</div>';
+    return;
+  }
+  container.innerHTML = cycles.slice(0, 6).map(c => `
+    <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:6px;font-size:13px;">
+      <div>${c.start_date} · 经期${c.period_length}天 · 周期${c.cycle_length}天</div>
+      ${c.notes ? `<div style="color:var(--text2);margin-top:4px;">${c.notes}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function showCycleForm() {
+  document.getElementById('cycleStartDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('cycleModal').classList.add('show');
+}
+
+function closeCycleForm() {
+  document.getElementById('cycleModal').classList.remove('show');
+}
+
+async function saveCycleRecord() {
+  await api('/api/cycle', {
+    method: 'POST',
+    body: JSON.stringify({
+      start_date: document.getElementById('cycleStartDate').value,
+      period_length: parseInt(document.getElementById('cyclePeriodLength').value),
+      cycle_length: parseInt(document.getElementById('cycleLength').value),
+      notes: document.getElementById('cycleNotes').value
+    })
+  });
+  closeCycleForm();
+  loadCycle();
+  showToast('记录成功！');
+}
+
+// ─── 五个一 ───
+const principleCats = ['立一个志', '读一本经', '改一个过', '日行一善', '行一次孝'];
+let principles = [];
+
+async function loadPrinciples() {
+  principles = await api('/api/principles');
+  renderPrinciples();
+}
+
+function renderPrinciples() {
+  const container = document.getElementById('principlesList');
+  container.innerHTML = principleCats.map(cat => {
+    const item = principles.find(p => p.category === cat);
+    return `
+      <div class="card">
+        <div class="card-title">${cat}</div>
+        <textarea class="principle-input" data-cat="${cat}" placeholder="写下你的${cat}...">${item ? item.content : ''}</textarea>
+      </div>
+    `;
+  }).join('');
+}
+
+async function savePrinciples() {
+  const data = principleCats.map((cat, i) => ({
+    category: cat,
+    content: document.querySelector(`[data-cat="${cat}"]`)?.value || '',
+    order_index: i
+  }));
+  await api('/api/principles', { method: 'POST', body: JSON.stringify(data) });
+  showToast('保存成功！');
+}
+
+// ─── 自知 ───
+const selfknowCats = ['价值观', '人性', 'advantage', 'disadvantage'];
+let selfknowledge = {};
+
+async function loadSelfKnowledge() {
+  selfknowledge = await api('/api/self-knowledge');
+  renderSelfKnowledge();
+}
+
+function renderSelfKnowledge() {
+  const labels = { '价值观': '我的核心价值观', '人性': '对人性的理解', 'advantage': '我的优势', 'disadvantage': '我的劣势' };
+  const container = document.getElementById('selfknowList');
+  container.innerHTML = selfknowCats.map(cat => `
+    <div class="card">
+      <div class="card-title">${labels[cat] || cat}</div>
+      <textarea class="principle-input" data-cat="${cat}" placeholder="写下你的思考...">${selfknowledge[cat] || ''}</textarea>
+    </div>
+  `).join('');
+}
+
+async function saveSelfKnowledge() {
+  const data = {};
+  selfknowCats.forEach(cat => {
+    data[cat] = document.querySelector(`[data-cat="${cat}"]`)?.value || '';
+  });
+  await api('/api/self-knowledge', { method: 'POST', body: JSON.stringify(data) });
+  showToast('保存成功！');
+}
+
+// ─── 夫妻目标 ───
+async function loadCoupleGoals() {
+  const goals = await api('/api/couple/goals');
+  const container = document.getElementById('coupleGoalsList');
+  if (!goals || !goals.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">🎯</div><div>暂无夫妻目标</div></div>';
+    return;
+  }
+  const statusLabels = { proposed: '待讨论', discussing: '讨论中', aligned: '已对齐', in_progress: '进行中', done: '已完成' };
+  container.innerHTML = goals.map(g => `
+    <div class="card" style="border-left:4px solid var(--accent);">
+      <div style="display:flex;justify-content:space-between;align-items:start;">
+        <div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:4px;">${g.title}</div>
+          <div style="font-size:12px;color:var(--text2);">${g.category}</div>
+        </div>
+        <span style="font-size:11px;padding:4px 8px;background:var(--accent-light);border-radius:10px;color:var(--accent);">${statusLabels[g.status] || g.status}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── 夫妻约定 ───
+async function loadAgreements() {
+  const agreements = await api('/api/couple/agreements');
+  const container = document.getElementById('agreementsList');
+  if (!agreements || !agreements.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">🤝</div><div>暂无夫妻约定</div></div>';
+    return;
+  }
+  container.innerHTML = agreements.map(a => `
+    <div class="card">
+      <div style="font-size:15px;font-weight:600;margin-bottom:4px;">${a.title}</div>
+      <div style="font-size:13px;color:var(--text2);">${a.frequency} · ${a.time_range || '不限时间'}</div>
+    </div>
+  `).join('');
+}
+
+// ─── 设置 ───
+async function loadSettings() {
+  const settings = await api('/api/settings');
+  document.getElementById('setWorkStart').value = settings.work_start_earliest || '08:00';
+  document.getElementById('setWorkHours').value = settings.work_hours || '8.5';
+  if (currentUser) {
+    document.getElementById('myInviteCode').textContent = currentUser.invite_code || '-';
+  }
+}
+
+function showSettings() {
+  document.getElementById('settingsModal').classList.add('show');
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('show');
+}
+
+async function saveSettings() {
+  await api('/api/settings', {
+    method: 'PUT',
+    body: JSON.stringify({
+      work_start_earliest: document.getElementById('setWorkStart').value,
+      work_hours: document.getElementById('setWorkHours').value
+    })
+  });
+  closeSettings();
+  showToast('设置已保存');
+}
+
+async function bindPartner() {
+  const code = document.getElementById('partnerCode').value.trim();
+  if (!code) { showToast('请输入邀请码'); return; }
+  const res = await api('/api/partner/bind', { method: 'POST', body: JSON.stringify({ invite_code: code }) });
+  if (res.ok) {
+    showToast('绑定成功！');
+    currentUser.partner_id = res.partner.id;
+    closeSettings();
+  } else {
+    showToast(res.detail || '绑定失败');
+  }
+}
+
+// ─── Toast ───
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// ─── 启动 ───
+init();
+</script>
+</body>
+</html>

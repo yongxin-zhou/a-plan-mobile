@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+*.db
+*.pem
+audio/
+whisper_model/
+start.bat
+app.py
+models.py
+database.py
+chat_service.py
+requirements.txt
