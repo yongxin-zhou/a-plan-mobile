@@ -706,11 +706,17 @@ body {
   <div id="page-agent" class="page active">
     <!-- Agent 视图切换 -->
     <div class="top-bar">
-      <div class="top-bar-title">🤖 Agent</div>
+      <div class="top-bar-title">🤖 A计划</div>
       <div style="display:flex;gap:8px;">
         <button class="top-bar-btn" id="btn-agent-chat" onclick="switchAgentView('chat')" style="background:var(--accent-light);">💬</button>
         <button class="top-bar-btn" id="btn-agent-goals" onclick="switchAgentView('goals')">🎯</button>
       </div>
+    </div>
+    <!-- 价值观横幅 -->
+    <div style="padding:8px 16px;background:linear-gradient(135deg,#fdf6e3,#fff8e7);border-bottom:1px solid #f0e6d3;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;">
+      <span style="font-size:12px;color:#8a7a5b;">
+        🌟 智慧 · 高能量 · 长期主义 · 减少焦虑 · 识别环境 · 知己 · 齐家 · 治国
+      </span>
     </div>
 
     <!-- 视图1：对话界面 -->
@@ -724,7 +730,7 @@ body {
       </div>
       <!-- 消息区域 -->
       <div id="agentMessages" style="flex:1;overflow-y:auto;padding:8px 16px;display:flex;flex-direction:column;gap:10px;">
-        <div style="text-align:center;color:var(--text2);font-size:13px;padding:20px;">开始和 Agent 对话吧</div>
+        <div style="text-align:center;color:var(--text2);font-size:13px;padding:20px;">你好，我是你的AI时间管理搭档 🌟<br><br>帮你：<b>获取智慧</b> · <b>高能量</b> · <b>长期主义</b><br><b>减少焦虑</b> · <b>知己</b> · <b>齐家</b> · <b>治国</b><br><br>点击下方快捷操作开始</div>
       </div>
       <!-- 输入栏 -->
       <div style="padding:8px 16px;background:var(--card);border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0;">
