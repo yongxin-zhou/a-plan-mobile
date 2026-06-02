@@ -1077,11 +1077,13 @@ async function api(url, options = {}) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
   try {
     const res = await fetch(url, { ...options, headers: { ...headers, ...options.headers } });
-    if (res.status === 401) { showLogin(); return {}; }
-    return await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401) { showLogin(); return data; }
+    if (!res.ok) { data.detail = data.detail || `请求失败(${res.status})`; }
+    return data;
   } catch (e) {
     console.error('API Error:', e);
-    return {};
+    return { detail: '网络连接失败: ' + e.message };
   }
 }
 
@@ -1145,14 +1147,15 @@ async function doLogin() {
   if (loginMode === 'register') body.display_name = displayName || username;
 
   try {
+    showError('正在登录...');
     const res = await api(url, { method: 'POST', body: JSON.stringify(body) });
-    if (res.token) {
+    if (res && res.token) {
       token = res.token;
       localStorage.setItem('token', token);
       currentUser = res.user;
       showApp();
     } else {
-      showError(res.detail || res.error || JSON.stringify(res));
+      showError('登录失败: ' + (res.detail || res.error || '服务器无响应'));
     }
   } catch(e) {
     showError('网络错误: ' + e.message);
