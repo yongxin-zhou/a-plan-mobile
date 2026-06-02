@@ -337,6 +337,26 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
 
+# 自动创建默认账号（如果不存在）
+def _ensure_default_user():
+    db = SessionLocal()
+    try:
+        if not db.query(User).filter(User.username == "yongxin").first():
+            u = User(
+                username="yongxin",
+                password_hash=hash_password("1234"),
+                display_name="永鑫",
+                invite_code="yongxin01",
+            )
+            db.add(u)
+            db.commit()
+            print("✅ 已创建默认账号: yongxin / 1234")
+    finally:
+        db.close()
+
+# hash_password 需要先定义才能调用，所以放到后面执行
+# 会在首次请求时自动检查
+
 
 # ─── 认证辅助函数 ───
 
@@ -370,6 +390,10 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         return db.query(User).filter(User.id == payload["uid"]).first()
     except:
         return None
+
+
+# 首次启动时创建默认账号
+_ensure_default_user()
 
 
 # ─── 周计划辅助函数 ───
