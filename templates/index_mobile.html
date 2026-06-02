@@ -79,6 +79,7 @@
       <div style="display:flex;gap:8px;">
         <button class="top-bar-btn" id="btn-agent-chat" onclick="switchAgentView('chat')" style="background:var(--accent-light);">💬</button>
         <button class="top-bar-btn" id="btn-agent-goals" onclick="switchAgentView('goals')">🎯</button>
+        <button class="top-bar-btn" id="btn-agent-settings" onclick="switchAgentView('settings')">⚙️</button>
       </div>
     </div>
     <!-- 价值观横幅 -->
@@ -126,6 +127,76 @@
           <input id="genStartTime" type="time" value="08:00" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;">
           <button class="btn btn-primary" style="flex:1;" onclick="generateDaily()">🤖 生成今日计划</button>
         </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- 视图3：Agent 设置 -->
+    <div id="agent-settings-view" style="display:none;padding:12px 16px;">
+      <!-- Agent 人格 -->
+      <div class="card">
+        <div class="card-title">🤖 Agent 人格</div>
+        <div class="input-group">
+          <label class="input-label">角色名称</label>
+          <input id="cfgRoleName" class="input" placeholder="A计划">
+        </div>
+        <div class="input-group">
+          <label class="input-label">角色描述</label>
+          <textarea id="cfgRoleDesc" class="textarea" rows="2" placeholder="理性分析师 + 实战参谋 + 写作外脑"></textarea>
+        </div>
+        <div class="input-group">
+          <label class="input-label">语气风格</label>
+          <input id="cfgTone" class="input" placeholder="专业、务实、坦诚">
+        </div>
+        <div class="input-group">
+          <label class="input-label">协作模式</label>
+          <textarea id="cfgCollabMode" class="textarea" rows="2" placeholder="主动梳理焦点，被动不做重大决策"></textarea>
+        </div>
+        <div class="input-group">
+          <label class="input-label">特别关注</label>
+          <textarea id="cfgSpecialNotes" class="textarea" rows="2" placeholder="决策易犹豫→提供选项..."></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="saveAgentConfig()">保存人格配置</button>
+      </div>
+
+      <!-- 用户画像 -->
+      <div class="card">
+        <div class="card-title">👤 用户画像</div>
+        <div class="input-group">
+          <label class="input-label">每日时间分配（休息/生活/工作 小时）</label>
+          <div style="display:flex;gap:8px;">
+            <input id="cfgTimeRest" type="number" class="input" value="8" style="text-align:center;">
+            <input id="cfgTimeLife" type="number" class="input" value="8" style="text-align:center;">
+            <input id="cfgTimeWork" type="number" class="input" value="8" style="text-align:center;">
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">优势（JSON 数组）</label>
+          <textarea id="cfgStrengths" class="textarea" rows="2" placeholder='["坚韧","学习能力强","实践驱动"]'></textarea>
+        </div>
+        <div class="input-group">
+          <label class="input-label">待提升（JSON 数组）</label>
+          <textarea id="cfgGrowth" class="textarea" rows="2" placeholder='["决策犹豫","写作偏弱","逻辑分析"]'></textarea>
+        </div>
+        <div class="input-group">
+          <label class="input-label">习惯与偏好</label>
+          <textarea id="cfgHabits" class="textarea" rows="2" placeholder='{"work_start":"08:00","energy_peak":"morning"}'></textarea>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Agent 观察笔记</label>
+          <textarea id="cfgAgentNotes" class="textarea" rows="3" placeholder="Agent 在对话中观察到的用户特征..."></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="saveUserProfile()">保存用户画像</button>
+      </div>
+
+      <!-- Agent 记忆 -->
+      <div class="card">
+        <div class="card-title">🧠 Agent 记忆</div>
+        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="quick-btn" onclick="loadMemories()">🔄 刷新</button>
+          <button class="quick-btn" onclick="showAddMemory()">➕ 新增</button>
+        </div>
+        <div id="memoryList"></div>
       </div>
     </div>
   </div>
@@ -1073,9 +1144,12 @@ function switchAgentView(view) {
   agentView = view;
   document.getElementById('agent-chat-view').style.display = view === 'chat' ? 'flex' : 'none';
   document.getElementById('agent-goals-view').style.display = view === 'goals' ? 'block' : 'none';
+  document.getElementById('agent-settings-view').style.display = view === 'settings' ? 'block' : 'none';
   document.getElementById('btn-agent-chat').style.background = view === 'chat' ? 'var(--accent-light)' : 'var(--bg)';
   document.getElementById('btn-agent-goals').style.background = view === 'goals' ? 'var(--accent-light)' : 'var(--bg)';
+  document.getElementById('btn-agent-settings').style.background = view === 'settings' ? 'var(--accent-light)' : 'var(--bg)';
   if (view === 'goals') { loadStrategicGoals(); loadTodaySchedule(); }
+  if (view === 'settings') { loadAgentConfig(); loadUserProfile(); loadMemories(); }
 }
 
 // ─── Agent 对话 ───
@@ -1341,6 +1415,117 @@ async function generateDaily() {
 }
 
 // ─── Toast ───
+
+// ─── Agent 设置：人格配置 ───
+async function loadAgentConfig() {
+  const res = await api('/api/agent/config');
+  if (res.config) {
+    document.getElementById('cfgRoleName').value = res.config.role_name || '';
+    document.getElementById('cfgRoleDesc').value = res.config.role_desc || '';
+    document.getElementById('cfgTone').value = res.config.tone || '';
+    document.getElementById('cfgCollabMode').value = res.config.collab_mode || '';
+    document.getElementById('cfgSpecialNotes').value = res.config.special_notes || '';
+  }
+}
+
+async function saveAgentConfig() {
+  await api('/api/agent/config', {
+    method: 'PUT',
+    body: JSON.stringify({
+      role_name: document.getElementById('cfgRoleName').value,
+      role_desc: document.getElementById('cfgRoleDesc').value,
+      tone: document.getElementById('cfgTone').value,
+      collab_mode: document.getElementById('cfgCollabMode').value,
+      special_notes: document.getElementById('cfgSpecialNotes').value,
+    })
+  });
+  showToast('人格配置已保存');
+}
+
+// ─── Agent 设置：用户画像 ───
+async function loadUserProfile() {
+  const res = await api('/api/profile/enhanced');
+  if (res.profile) {
+    try {
+      const alloc = JSON.parse(res.profile.time_allocation_json || '{}');
+      document.getElementById('cfgTimeRest').value = alloc.rest || 8;
+      document.getElementById('cfgTimeLife').value = alloc.life || 8;
+      document.getElementById('cfgTimeWork').value = alloc.work || 8;
+    } catch(e) {}
+    document.getElementById('cfgStrengths').value = res.profile.strengths_json || '';
+    document.getElementById('cfgGrowth').value = res.profile.growth_areas_json || '';
+    document.getElementById('cfgHabits').value = res.profile.habits_json || '';
+    document.getElementById('cfgAgentNotes').value = res.profile.agent_notes || '';
+  }
+}
+
+async function saveUserProfile() {
+  await api('/api/profile/enhanced', {
+    method: 'PUT',
+    body: JSON.stringify({
+      time_allocation_json: JSON.stringify({
+        rest: parseInt(document.getElementById('cfgTimeRest').value) || 8,
+        life: parseInt(document.getElementById('cfgTimeLife').value) || 8,
+        work: parseInt(document.getElementById('cfgTimeWork').value) || 8,
+      }),
+      strengths_json: document.getElementById('cfgStrengths').value,
+      growth_areas_json: document.getElementById('cfgGrowth').value,
+      habits_json: document.getElementById('cfgHabits').value,
+      agent_notes: document.getElementById('cfgAgentNotes').value,
+      preferences_json: '{}',
+      learning_patterns_json: '{}',
+    })
+  });
+  showToast('用户画像已保存');
+}
+
+// ─── Agent 设置：记忆管理 ───
+async function loadMemories() {
+  const res = await api('/api/agent/memory');
+  const container = document.getElementById('memoryList');
+  if (!res.memories || res.memories.length === 0) {
+    container.innerHTML = '<div class="empty">暂无记忆，Agent 会在对话中主动观察并提议记录</div>';
+    return;
+  }
+  const categoryColors = { observation: 'tag-blue', fact: 'tag-green', preference: 'tag-yellow', pattern: 'tag-orange', value: 'tag-pink' };
+  const categoryNames = { observation: '观察', fact: '事实', preference: '偏好', pattern: '模式', value: '价值观' };
+  const strengthNames = { weak: '弱', medium: '中', strong: '强' };
+  container.innerHTML = res.memories.map(m => `
+    <div style="padding:10px 0;border-bottom:1px solid var(--border-soft);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="tag ${categoryColors[m.category] || 'tag-blue'}">${categoryNames[m.category] || m.category}</span>
+          <strong style="font-size:13px;">${m.title}</strong>
+        </div>
+        <span style="font-size:11px;color:var(--ink-muted);">强度:${strengthNames[m.strength] || m.strength}</span>
+      </div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-top:4px;">${m.content}</div>
+      <div style="font-size:11px;color:var(--ink-muted);margin-top:4px;">
+        引用${m.reference_count}次 · ${m.source}
+        <span onclick="deleteMemory(${m.id})" style="float:right;cursor:pointer;color:var(--danger);">🗑️</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function showAddMemory() {
+  const title = prompt('记忆标题：');
+  if (!title) return;
+  const content = prompt('记忆内容：');
+  if (!content) return;
+  const category = prompt('分类（observation/fact/preference/pattern/value）：') || 'observation';
+  api('/api/agent/memory', {
+    method: 'POST',
+    body: JSON.stringify({ title, content, category, source: 'user' })
+  }).then(() => { loadMemories(); showToast('记忆已添加'); });
+}
+
+async function deleteMemory(id) {
+  if (!confirm('确定删除这条记忆？')) return;
+  await api('/api/agent/memory/' + id, { method: 'DELETE' });
+  loadMemories();
+}
+
 </script>
 </body>
 </html>

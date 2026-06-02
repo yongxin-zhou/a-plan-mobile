@@ -322,6 +322,39 @@ class GoalProgress(Base):
     created_at = Column(DateTime, default=datetime.now)
 
 
+class AgentMemory(Base):
+    """Agent 记忆 — 对应电脑端 MEMORY.md 记忆管理"""
+    __tablename__ = "agent_memory"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    category = Column(String(30), default="observation")  # observation/fact/preference/pattern/value
+    title = Column(String(200), nullable=False)
+    content = Column(Text, nullable=False)
+    strength = Column(String(20), default="weak")  # weak/medium/strong — 强记忆可"毕业"为稳定特征
+    status = Column(String(20), default="active")  # active/decayed/archived/proposed
+    source = Column(String(50), default="agent")  # agent/user/system
+    last_referenced_at = Column(DateTime, nullable=True)
+    reference_count = Column(Integer, default=0)
+    decay_at = Column(DateTime, nullable=True)  # 弱记忆4周未引用则衰减
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class AgentConfig(Base):
+    """Agent 人格配置 — 对应电脑端 SOUL.md"""
+    __tablename__ = "agent_config"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    role_name = Column(String(100), default="A计划")
+    role_desc = Column(Text, default="理性分析师 + 实战参谋 + 写作外脑")
+    tone = Column(String(100), default="专业、务实、坦诚")
+    values_json = Column(Text, default='["智慧","高能量","长期主义","减少焦虑","识别环境","知己","齐家","治国"]')
+    collab_mode = Column(Text, default="主动梳理焦点，被动不做重大决策")
+    special_notes = Column(Text, default="决策易犹豫→提供选项；写作短板→主动代笔；逻辑分析→先给框架")
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
 # ─── FastAPI 应用 ───
 from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
@@ -1299,6 +1332,171 @@ def update_enhanced_profile(data: EnhancedProfileData, db: Session = Depends(get
     return {"ok": True}
 
 
+# ─── Agent 记忆管理 ───
+
+@app.get("/api/agent/memory")
+def get_agent_memory(category: str = None, db: Session = Depends(get_db)):
+    """获取 Agent 记忆列表"""
+    q = db.query(AgentMemory).filter(AgentMemory.status != "archived")
+    if category:
+        q = q.filter(AgentMemory.category == category)
+    memories = q.order_by(AgentMemory.id.desc()).limit(50).all()
+    return {"memories": [{
+        "id": m.id, "category": m.category, "title": m.title,
+        "content": m.content, "strength": m.strength, "status": m.status,
+        "source": m.source, "reference_count": m.reference_count,
+        "created_at": m.created_at.isoformat() if m.created_at else None,
+    } for m in memories]}
+
+
+@app.post("/api/agent/memory")
+def add_agent_memory(data: dict, db: Session = Depends(get_db)):
+    """添加 Agent 记忆（用户确认后写入）"""
+    mem = AgentMemory(
+        user_id=1,
+        category=data.get("category", "observation"),
+        title=data.get("title", ""),
+        content=data.get("content", ""),
+        strength=data.get("strength", "weak"),
+        status="active",
+        source=data.get("source", "user"),
+    )
+    db.add(mem)
+    db.commit()
+    return {"ok": True, "id": mem.id}
+
+
+@app.put("/api/agent/memory/{mem_id}")
+def update_agent_memory(mem_id: int, data: dict, db: Session = Depends(get_db)):
+    """更新记忆（调整强度/状态/内容）"""
+    mem = db.query(AgentMemory).filter(AgentMemory.id == mem_id).first()
+    if not mem:
+        raise HTTPException(404, "记忆不存在")
+    for key in ["title", "content", "strength", "status", "category"]:
+        if key in data:
+            setattr(mem, key, data[key])
+    mem.last_referenced_at = datetime.now()
+    mem.reference_count += 1
+    db.commit()
+    return {"ok": True}
+
+
+@app.delete("/api/agent/memory/{mem_id}")
+def delete_agent_memory(mem_id: int, db: Session = Depends(get_db)):
+    mem = db.query(AgentMemory).filter(AgentMemory.id == mem_id).first()
+    if mem:
+        mem.status = "archived"
+        db.commit()
+    return {"ok": True}
+
+
+@app.post("/api/agent/memory/decay")
+def decay_old_memories(db: Session = Depends(get_db)):
+    """衰减 4 周未引用的弱记忆"""
+    threshold = datetime.now() - timedelta(weeks=4)
+    weak = db.query(AgentMemory).filter(
+        AgentMemory.strength == "weak",
+        AgentMemory.status == "active",
+        AgentMemory.last_referenced_at < threshold
+    ).all()
+    for m in weak:
+        m.status = "decayed"
+    db.commit()
+    return {"ok": True, "decayed": len(weak)}
+
+
+# ─── Agent 人格配置 ───
+
+@app.get("/api/agent/config")
+def get_agent_config(db: Session = Depends(get_db)):
+    """获取 Agent 人格配置"""
+    cfg = db.query(AgentConfig).first()
+    if not cfg:
+        # 创建默认配置
+        cfg = AgentConfig(user_id=1)
+        db.add(cfg)
+        db.commit()
+        db.refresh(cfg)
+    return {"config": {
+        "id": cfg.id, "role_name": cfg.role_name, "role_desc": cfg.role_desc,
+        "tone": cfg.tone, "values_json": cfg.values_json,
+        "collab_mode": cfg.collab_mode, "special_notes": cfg.special_notes,
+    }}
+
+
+@app.put("/api/agent/config")
+def update_agent_config(data: dict, db: Session = Depends(get_db)):
+    """更新 Agent 人格配置"""
+    cfg = db.query(AgentConfig).first()
+    if not cfg:
+        cfg = AgentConfig(user_id=1)
+        db.add(cfg)
+    for key in ["role_name", "role_desc", "tone", "values_json", "collab_mode", "special_notes"]:
+        if key in data:
+            setattr(cfg, key, data[key])
+    db.commit()
+    return {"ok": True}
+
+
+# ─── Agent 系统 Prompt 构建 ───
+
+def build_agent_system_prompt(db: Session) -> str:
+    """根据 AgentConfig + AgentMemory + UserProfile 动态构建 system prompt"""
+    # 1. 读取 Agent 人格
+    cfg = db.query(AgentConfig).first()
+    role_name = cfg.role_name if cfg else "A计划"
+    role_desc = cfg.role_desc if cfg else "理性分析师 + 实战参谋"
+    tone = cfg.tone if cfg else "专业、务实、坦诚"
+    values = cfg.values_json if cfg else '["智慧","高能量","长期主义"]'
+    collab = cfg.collab_mode if cfg else "主动梳理焦点"
+    special = cfg.special_notes if cfg else ""
+
+    # 2. 读取活跃记忆
+    memories = db.query(AgentMemory).filter(
+        AgentMemory.status == "active"
+    ).order_by(AgentMemory.strength.desc()).limit(20).all()
+    mem_text = "\n".join([f"- [{m.category}] {m.title}: {m.content}" for m in memories]) if memories else "暂无记忆"
+
+    # 3. 读取用户画像
+    profile = db.query(EnhancedUserProfile).first()
+    profile_text = ""
+    if profile:
+        profile_text = f"习惯: {profile.habits_json}\n优势: {profile.strengths_json}\n待提升: {profile.growth_areas_json}"
+
+    prompt = f"""你是{role_name}，永鑫的AI时间管理搭档。
+
+【角色】{role_desc}
+【语气】{tone}
+【价值观】{values}
+【协作模式】{collab}
+【特别关注】{special}
+
+【用户画像】
+{profile_text}
+
+【Agent 记忆】
+{mem_text}
+
+【工作原则】
+1. 将年度战略目标分解为可执行的月/周/日计划
+2. 根据每天开始工作的时间，生成当日时间安排
+3. 追踪目标进度，发现偏差时主动提醒
+4. 通过对话了解工作习惯，持续优化计划
+5. 遇到焦虑或压力时，引导识别问题本质，给出行动方案
+6. 发现新的用户特征时，提议记录到记忆系统
+7. 提醒永鑫：家庭>事业>学习，齐家是根基
+
+时间分配原则（8h/8h/8h）：
+- 休息（8h）：睡眠、午休、放松（高能量的基础）
+- 生活（8h）：家庭、育儿、家务、社交（齐家）
+- 工作（8h）：职业工作 + 战略学习（治国平天下）
+
+输出要求：中文，简洁，先结论后展开。涉及计划时输出JSON格式。
+遇到焦虑类话题时，先共情再分析，最后给出可执行的下一步行动。"""
+
+    return prompt
+
+
 # ─── 日计划（LLM 生成） ───
 
 @app.get("/api/schedule/daily/{date_str}")
@@ -1400,46 +1598,22 @@ def agent_chat(req: AgentChatRequest, db: Session = Depends(get_db)):
     # 构建 prompt
     context = "\n".join([f"{'用户' if m.role == 'user' else '助手'}: {m.content}" for m in recent])
 
-    system_prompt = """你是A计划，永鑫的AI时间管理搭档。
+    system_prompt = build_agent_system_prompt(db) + f"""
 
-【核心价值观】
-- 智慧：学习古圣先贤的智慧（四书五经、经典），将其融入日常生活决策
-- 高能量：保持身心活力，合理分配精力，避免内耗和焦虑
-- 长期主义：关注长期价值，不被短期波动干扰，持续积累复利
-- 减少焦虑：识别焦虑来源，用行动和计划化解不确定性
-- 识别环境：看清时代趋势、行业变化、自身位置，顺势而为
-- 知己：深入了解自己的优势、局限、情绪模式，扬长避短
-- 齐家：经营好家庭关系，夫妻同心，亲子陪伴，家庭是事业的根基
-- 治国平天下：发展事业，创造价值，承担责任
+【当前上下文】
+战略目标：
+{goals_text}
 
-【角色定位】
-- 理性分析师：帮永鑫看清现状，用数据和逻辑分析
-- 实战参谋：给具体可执行的建议，不讲空话
-- 写作外脑：帮永鑫表达想法，弥补写作短板
-- 能量守卫：当永鑫焦虑或内耗时，引导他回到正轨
+今日计划：
+{schedule_text}
 
-【工作原则】
-1. 将年度战略目标分解为可执行的月/周/日计划
-2. 根据每天开始工作的时间，生成当日时间安排
-3. 追踪目标进度，发现偏差时主动提醒
-4. 通过对话了解工作习惯，持续优化计划
-5. 遇到焦虑或压力时，引导识别问题本质，给出行动方案
-6. 提醒永鑫：家庭>事业>学习，齐家是根基
-
-时间分配原则（8h/8h/8h）：
-- 休息（8h）：睡眠、午休、放松（高能量的基础）
-- 生活（8h）：家庭、育儿、家务、社交（齐家）
-- 工作（8h）：职业工作 + 战略学习（治国平天下）
-
-输出要求：中文，简洁，先结论后展开。涉及计划时输出JSON格式。
-遇到焦虑类话题时，先共情再分析，最后给出可执行的下一步行动。"""
+最近对话：
+{context}"""
 
     user_context = f"""当前战略目标：
 {goals_text}
 
 今日计划：{schedule_text}
-
-用户画像备注：{profile_text}
 
 对话历史：
 {context}
