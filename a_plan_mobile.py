@@ -533,7 +533,11 @@ class EnhancedProfileData(BaseModel):
 @app.get("/favicon.ico", response_class=HTMLResponse)
 def index(request: Request):
     try:
-        return templates.TemplateResponse("index_mobile.html", {"request": request})
+        resp = templates.TemplateResponse("index_mobile.html", {"request": request})
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
     except Exception as e:
         from fastapi.responses import PlainTextResponse
         return PlainTextResponse(f"Template error: {str(e)}")
