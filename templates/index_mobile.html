@@ -1548,21 +1548,53 @@ async function loadStrategicGoals() {
       return;
     }
     grid.innerHTML = res.goals.map(g => `
-      <div class="goal-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <div style="font-size:14px;font-weight:600;">${g.title}</div>
-          <div style="font-size:20px;font-weight:700;color:var(--accent);">${Math.round(g.progress_pct)}%</div>
+      <div class="goal-card" style="position:relative;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="font-size:14px;font-weight:600;flex:1;">${g.title}</div>
+          <div style="font-size:18px;font-weight:700;color:var(--accent);">${Math.round(g.progress_pct)}%</div>
         </div>
-        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:6px;">
           <div style="height:100%;width:${g.progress_pct}%;background:var(--accent);border-radius:2px;transition:width 0.3s;"></div>
         </div>
-        <div style="font-size:11px;color:var(--text2);margin-top:6px;">${g.category} · 优先级${g.priority}</div>
+        <div style="font-size:11px;color:var(--ink-muted);margin-bottom:8px;">${g.category} · 优先级${g.priority}</div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="editGoal(${g.id}, '${g.title}', '${(g.description||'').replace(/'/g,"\\'")}', ${g.progress_pct})" class="quick-btn" style="font-size:10px;padding:4px 8px;">✏️ 编辑</button>
+          <button onclick="adjustGoalProgress(${g.id}, ${g.progress_pct})" class="quick-btn" style="font-size:10px;padding:4px 8px;">📊 调进度</button>
+          <button onclick="deleteGoal(${g.id}, '${g.title}')" class="quick-btn" style="font-size:10px;padding:4px 8px;color:var(--danger);">🗑️</button>
+        </div>
       </div>
     `).join('');
 
-    // 加载月度里程碑
     loadMonthlyMilestones();
   } catch(e) {}
+}
+
+function editGoal(id, title, desc, progress) {
+  var newTitle = prompt('目标名称：', title);
+  if (newTitle === null) return;
+  var newDesc = prompt('目标描述：', desc);
+  if (newDesc === null) return;
+  api('/api/goals/strategic/' + id, {
+    method: 'PUT',
+    body: JSON.stringify({ title: newTitle, description: newDesc })
+  }).then(function() { loadStrategicGoals(); showToast('已更新'); });
+}
+
+function adjustGoalProgress(id, current) {
+  var val = prompt('调整进度（0-100）：', Math.round(current));
+  if (val === null) return;
+  var pct = parseInt(val);
+  if (isNaN(pct) || pct < 0 || pct > 100) { showToast('请输入0-100'); return; }
+  api('/api/goals/strategic/' + id, {
+    method: 'PUT',
+    body: JSON.stringify({ progress_pct: pct })
+  }).then(function() { loadStrategicGoals(); showToast('进度已更新'); });
+}
+
+function deleteGoal(id, title) {
+  if (!confirm('确定删除「' + title + '」？')) return;
+  api('/api/goals/strategic/' + id, { method: 'DELETE' })
+    .then(function() { loadStrategicGoals(); showToast('已删除'); });
 }
 
 async function initDefaultGoals() {

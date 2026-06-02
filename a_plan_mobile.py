@@ -1223,6 +1223,30 @@ def save_strategic_goals(batch: StrategicGoalBatch, db: Session = Depends(get_db
     return {"ok": True}
 
 
+@app.put("/api/goals/strategic/{goal_id}")
+def update_strategic_goal(goal_id: int, data: dict, db: Session = Depends(get_db)):
+    """更新单个战略目标"""
+    goal = db.query(StrategicGoal).filter(StrategicGoal.id == goal_id).first()
+    if not goal:
+        raise HTTPException(404, "目标不存在")
+    for key in ["title", "description", "category", "priority", "progress_pct", "status"]:
+        if key in data:
+            setattr(goal, key, data[key])
+    goal.updated_at = datetime.now()
+    db.commit()
+    return {"ok": True}
+
+
+@app.delete("/api/goals/strategic/{goal_id}")
+def delete_strategic_goal(goal_id: int, db: Session = Depends(get_db)):
+    """删除单个战略目标"""
+    goal = db.query(StrategicGoal).filter(StrategicGoal.id == goal_id).first()
+    if goal:
+        db.delete(goal)
+        db.commit()
+    return {"ok": True}
+
+
 @app.get("/api/goals/progress")
 def get_goal_progress(goal_id: int = None, days: int = 90, db: Session = Depends(get_db)):
     q = db.query(GoalProgress)
