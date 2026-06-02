@@ -293,6 +293,19 @@ class AgentConversation(Base):
     created_at = Column(DateTime, default=datetime.now)
 
 
+class AgentActionCache(Base):
+    """快捷操作结果缓存 — 每个操作类型每天缓存一次"""
+    __tablename__ = "agent_action_cache"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    action_type = Column(String(50), nullable=False)  # generate_daily/decompose_monthly/goal_progress/adjust_plan
+    date_key = Column(String(10), nullable=False)  # YYYY-MM-DD
+    result_json = Column(Text, default="{}")
+    user_feedback = Column(Text, default="")  # 用户的附加建议
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
 class EnhancedUserProfile(Base):
     """增强用户画像"""
     __tablename__ = "enhanced_user_profiles"
@@ -555,6 +568,7 @@ class AgentChatRequest(BaseModel):
 class DailyScheduleRequest(BaseModel):
     date: str  # YYYY-MM-DD
     start_time: str = "08:00"
+    feedback: str = ""  # 用户附加建议
 
 class EnhancedProfileData(BaseModel):
     habits_json: str = "{}"
@@ -1497,6 +1511,43 @@ def build_agent_system_prompt(db: Session) -> str:
     return prompt
 
 
+# ─── 快捷操作缓存 ───
+
+@app.get("/api/agent/action-cache")
+def get_action_cache(action_type: str, date_key: str = None, db: Session = Depends(get_db)):
+    """获取快捷操作缓存"""
+    if not date_key:
+        date_key = date.today().isoformat()
+    cache = db.query(AgentActionCache).filter(
+        AgentActionCache.action_type == action_type,
+        AgentActionCache.date_key == date_key,
+    ).first()
+    if not cache:
+        return {"cached": False, "result": None}
+    return {"cached": True, "result": cache.result_json, "feedback": cache.user_feedback}
+
+
+@app.post("/api/agent/action-cache")
+def save_action_cache(data: dict, db: Session = Depends(get_db)):
+    """保存快捷操作结果到缓存"""
+    action_type = data.get("action_type", "")
+    date_key = data.get("date_key", date.today().isoformat())
+    result_json = data.get("result_json", "{}")
+    user_feedback = data.get("user_feedback", "")
+
+    cache = db.query(AgentActionCache).filter(
+        AgentActionCache.action_type == action_type,
+        AgentActionCache.date_key == date_key,
+    ).first()
+    if not cache:
+        cache = AgentActionCache(user_id=1, action_type=action_type, date_key=date_key)
+        db.add(cache)
+    cache.result_json = result_json
+    cache.user_feedback = user_feedback
+    db.commit()
+    return {"ok": True}
+
+
 # ─── 日计划（LLM 生成） ───
 
 @app.get("/api/schedule/daily/{date_str}")
@@ -1727,6 +1778,9 @@ type可选值：focus_90, focus_60, rest_15, rest_10, life, sleep
 {milestones_text}
 
 请生成精确的日程JSON。"""
+
+    if req.feedback:
+        user_prompt += f"\n\n【用户特别要求】\n{req.feedback}"
 
     blocks = []
     summary = ""

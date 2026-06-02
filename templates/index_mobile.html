@@ -1259,36 +1259,124 @@ async function sendAgentMsg() {
   }
 }
 
+// ─── 快捷操作（带缓存 + 用户反馈） ───
+
+const ACTION_TYPES = {
+  '生成今日计划': 'generate_daily',
+  '查看目标进度': 'goal_progress',
+  '调整计划': 'adjust_plan',
+  '分解月度目标': 'decompose_monthly',
+};
+
+let currentActionFeedback = {};  // 存储用户的附加建议
+
 async function agentQuickAction(action) {
-  const input = document.getElementById('agentInput');
-  if (action === '生成今日计划') {
-    const today = new Date().toISOString().slice(0, 10);
-    appendAgentMsg('user', '生成今日计划', new Date().toISOString());
-    showTyping();
-    try {
+  const actionType = ACTION_TYPES[action];
+  if (!actionType) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const container = document.getElementById('agentMessages');
+
+  // 检查缓存
+  const cacheRes = await api('/api/agent/action-cache?action_type=' + actionType + '&date_key=' + today);
+
+  if (cacheRes.cached && cacheRes.result) {
+    // 有缓存 → 显示内容 + 操作按钮
+    const result = JSON.parse(cacheRes.result);
+    let content = result.content || result.summary || JSON.stringify(result);
+
+    // 构建带按钮的消息
+    appendAgentMsg('assistant', content, new Date().toISOString());
+
+    // 在消息下方追加操作按钮
+    const btnDiv = document.createElement('div');
+    btnDiv.style.cssText = 'display:flex;gap:6px;padding:0 0 8px;flex-wrap:wrap;';
+    btnDiv.innerHTML =
+      '<button onclick="regenerateAction(\'' + action + '\')" class="quick-btn" style="font-size:11px;">🔄 重新生成</button>' +
+      '<button onclick="showFeedbackInput(\'' + action + '\')" class="quick-btn" style="font-size:11px;">💡 加建议再生成</button>';
+    container.appendChild(btnDiv);
+    scrollToBottom();
+  } else {
+    // 无缓存 → 显示生成按钮
+    const btnDiv = document.createElement('div');
+    btnDiv.style.cssText = 'display:flex;gap:8px;padding:4px 0 8px;';
+    btnDiv.innerHTML =
+      '<button onclick="doGenerate(\'' + action + '\')" class="btn btn-primary" style="flex:1;font-size:13px;padding:8px 12px;">🤖 点击生成' + action + '</button>';
+    container.appendChild(btnDiv);
+    scrollToBottom();
+  }
+}
+
+async function doGenerate(action, feedback) {
+  const actionType = ACTION_TYPES[action];
+  const today = new Date().toISOString().slice(0, 10);
+  const container = document.getElementById('agentMessages');
+
+  appendAgentMsg('user', action + (feedback ? '\n💡 建议：' + feedback : ''), new Date().toISOString());
+  showTyping();
+
+  try {
+    let result = {};
+    if (action === '生成今日计划') {
       const startTime = document.getElementById('genStartTime')?.value || '08:00';
-      const res = await api('/api/agent/generate-daily', {
+      result = await api('/api/agent/generate-daily', {
         method: 'POST',
-        body: JSON.stringify({ date: today, start_time: startTime })
+        body: JSON.stringify({ date: today, start_time: startTime, feedback: feedback || '' })
       });
       hideTyping();
-      if (res.ok) {
-        let reply = `✅ 今日计划已生成\n\n${res.summary}\n\n专注: ${res.focus_minutes}分钟 | 休息: ${res.rest_minutes}分钟 | 生活: ${res.life_minutes}分钟`;
-        appendAgentMsg('assistant', reply, new Date().toISOString());
+      if (result.ok) {
+        const content = '✅ 今日计划已生成\n\n' + result.summary + '\n\n专注: ' + result.focus_minutes + '分钟 | 休息: ' + result.rest_minutes + '分钟 | 生活: ' + result.life_minutes + '分钟';
+        appendAgentMsg('assistant', content, new Date().toISOString());
+        // 缓存结果
+        await api('/api/agent/action-cache', {
+          method: 'POST',
+          body: JSON.stringify({ action_type: actionType, date_key: today, result_json: JSON.stringify({ content: content }), user_feedback: feedback || '' })
+        });
         loadTodaySchedule();
       } else {
-        appendAgentMsg('assistant', '生成失败：' + (res.error || '未知错误'), new Date().toISOString());
+        appendAgentMsg('assistant', '生成失败：' + (result.error || '未知错误'), new Date().toISOString());
       }
-    } catch(e) {
+    } else if (action === '分解月度目标') {
+      const decomRes = await api('/api/agent/decompose-monthly', { method: 'POST' });
       hideTyping();
-      appendAgentMsg('assistant', '请求失败：' + e.message, new Date().toISOString());
+      if (decomRes.ok) {
+        const ms = decomRes.milestones || [];
+        const content = '✅ 月度分解完成\n\n' + ms.map(function(m, i) { return (i+1) + '. ' + m.title; }).join('\n');
+        appendAgentMsg('assistant', content, new Date().toISOString());
+        await api('/api/agent/action-cache', {
+          method: 'POST',
+          body: JSON.stringify({ action_type: actionType, date_key: today, result_json: JSON.stringify({ content: content }), user_feedback: feedback || '' })
+        });
+      } else {
+        appendAgentMsg('assistant', '分解失败：' + (decomRes.error || '未知错误'), new Date().toISOString());
+      }
+    } else {
+      // 查看目标进度 / 调整计划 → 发送到 Agent 对话
+      const input = document.getElementById('agentInput');
+      input.value = feedback ? action + '\n建议：' + feedback : action;
+      sendAgentMsg();
+      return;
     }
-  } else if (action === '分解月度目标') {
-    decomposeMonthly();
-  } else {
-    input.value = action;
-    sendAgentMsg();
+  } catch(e) {
+    hideTyping();
+    appendAgentMsg('assistant', '请求失败：' + e.message, new Date().toISOString());
   }
+}
+
+function regenerateAction(action) {
+  doGenerate(action);
+}
+
+function showFeedbackInput(action) {
+  const feedback = prompt('输入建议或调整方向，让 LLM 生成更符合你需求的计划：');
+  if (feedback !== null && feedback.trim()) {
+    doGenerate(action, feedback.trim());
+  }
+}
+
+function scrollToBottom() {
+  const el = document.getElementById('agentMessages');
+  if (el) el.scrollTop = el.scrollHeight;
 }
 
 // ─── 语音输入 ───
