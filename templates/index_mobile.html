@@ -1666,7 +1666,7 @@ const HAWKINS_SCALE = [
 function renderEnergyScale() {
   const container = document.getElementById('energyScale');
   const maxLevel = 700;
-  container.innerHTML = HAWKINS_SCALE.map(item => {
+  container.innerHTML = HAWKINS_SCALE.slice().reverse().map(item => {
     const width = Math.max(8, (item.level / maxLevel) * 100);
     const isThreshold = item.level === 200;
     return '<div style="margin-bottom:6px;' + (isThreshold ? 'border:1px dashed var(--accent);padding:6px;border-radius:6px;margin:8px 0;' : '') + '">' +
