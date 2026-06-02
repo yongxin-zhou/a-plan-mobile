@@ -92,16 +92,25 @@
 
     <!-- 视图1：对话界面 -->
     <div id="agent-chat-view" style="display:flex;flex-direction:column;height:calc(100vh - 130px);">
-      <!-- 快捷操作 -->
-      <div style="padding:8px 16px;display:flex;gap:8px;overflow-x:auto;flex-shrink:0;">
-        <button class="chip" onclick="agentQuickAction('生成今日计划')">📅 生成今日计划</button>
-        <button class="chip" onclick="agentQuickAction('查看目标进度')">📊 目标进度</button>
-        <button class="chip" onclick="agentQuickAction('调整计划')">✏️ 调整计划</button>
-        <button class="chip" onclick="agentQuickAction('分解月度目标')">🎯 分解月度</button>
+      <!-- 快捷操作 Tab -->
+      <div style="padding:8px 16px;display:flex;gap:6px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid var(--border);">
+        <button class="chip" id="chip-daily" onclick="switchActionTab('daily')" style="font-size:12px;padding:6px 10px;">📅 今日计划</button>
+        <button class="chip" id="chip-progress" onclick="switchActionTab('progress')" style="font-size:12px;padding:6px 10px;">📊 目标进度</button>
+        <button class="chip" id="chip-adjust" onclick="switchActionTab('adjust')" style="font-size:12px;padding:6px 10px;">✏️ 调整计划</button>
+        <button class="chip" id="chip-decompose" onclick="switchActionTab('decompose')" style="font-size:12px;padding:6px 10px;">🎯 分解月度</button>
       </div>
-      <!-- 消息区域 -->
-      <div id="agentMessages" style="flex:1;overflow-y:auto;padding:8px 16px;display:flex;flex-direction:column;gap:10px;">
-        <div style="text-align:center;color:var(--text2);font-size:13px;padding:20px;">你好，我是你的AI时间管理搭档 🌟<br><br>帮你：<b>获取智慧</b> · <b>高能量</b> · <b>长期主义</b><br><b>减少焦虑</b> · <b>知己</b> · <b>齐家</b> · <b>治国</b><br><br>点击下方快捷操作开始</div>
+      <!-- Tab 内容区（互斥显示） -->
+      <div id="actionTabContent" style="flex:1;overflow-y:auto;padding:12px 16px;">
+        <div id="tab-daily" class="action-tab" style="display:none;"></div>
+        <div id="tab-progress" class="action-tab" style="display:none;"></div>
+        <div id="tab-adjust" class="action-tab" style="display:none;"></div>
+        <div id="tab-decompose" class="action-tab" style="display:none;"></div>
+        <div id="tab-welcome" style="text-align:center;color:var(--ink-muted);font-size:13px;padding:40px 20px;">
+          <div style="font-size:48px;margin-bottom:12px;">🤖</div>
+          <div style="font-weight:600;font-size:15px;color:var(--ink);margin-bottom:8px;">你好，我是 A计划</div>
+          <div style="line-height:1.6;">帮你：<b>获取智慧</b> · <b>高能量</b> · <b>长期主义</b><br><b>减少焦虑</b> · <b>知己</b> · <b>齐家</b> · <b>治国</b></div>
+          <div style="margin-top:16px;color:var(--ink-dim);">点击上方标签开始</div>
+        </div>
       </div>
       <!-- 输入栏 -->
       <div style="padding:8px 16px;background:var(--card);border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0;">
@@ -1264,124 +1273,178 @@ async function sendAgentMsg() {
   }
 }
 
-// ─── 快捷操作（带缓存 + 用户反馈） ───
+// ─── Markdown 渲染器 ───
+function renderMarkdown(text) {
+  if (!text) return '';
+  var html = text
+    // 代码块
+    .replace(/```([\s\S]*?)```/g, '<pre style="background:var(--surface-1);padding:10px;border-radius:6px;font-size:12px;overflow-x:auto;margin:8px 0;"><code>$1</code></pre>')
+    // 行内代码
+    .replace(/`([^`]+)`/g, '<code style="background:var(--surface-1);padding:1px 5px;border-radius:3px;font-size:13px;">$1</code>')
+    // 标题
+    .replace(/^### (.+)$/gm, '<div style="font-size:15px;font-weight:700;margin:12px 0 6px;color:var(--ink);">$1</div>')
+    .replace(/^## (.+)$/gm, '<div style="font-size:16px;font-weight:700;margin:14px 0 8px;color:var(--ink);">$1</div>')
+    .replace(/^# (.+)$/gm, '<div style="font-size:18px;font-weight:800;margin:16px 0 8px;color:var(--ink);">$1</div>')
+    // 粗体和斜体
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // 复选框
+    .replace(/^- \[x\] (.+)$/gm, '<div style="padding:3px 0;">✅ $1</div>')
+    .replace(/^- \[ \] (.+)$/gm, '<div style="padding:3px 0;">⬜ $1</div>')
+    // 无序列表
+    .replace(/^[-*] (.+)$/gm, '<div style="padding:2px 0 2px 16px;position:relative;"><span style="position:absolute;left:4px;">•</span>$1</div>')
+    // 有序列表（简化处理）
+    .replace(/^(\d+)\. (.+)$/gm, '<div style="padding:2px 0 2px 20px;position:relative;"><span style="position:absolute;left:4px;font-weight:600;color:var(--accent);">$1.</span>$2</div>')
+    // 分割线
+    .replace(/^---+$/gm, '<div style="border-top:1px solid var(--border);margin:12px 0;"></div>')
+    // 引用
+    .replace(/^> (.+)$/gm, '<div style="border-left:3px solid var(--accent);padding:4px 12px;margin:6px 0;background:var(--accent-light);font-size:13px;">$1</div>')
+    // 表格行（简单处理）
+    .replace(/^\|(.+)\|$/gm, function(match, content) {
+      var cells = content.split('|').map(function(c) { return c.trim(); });
+      return '<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-soft);font-size:13px;">' +
+        cells.map(function(c) { return '<span style="flex:1;">' + c + '</span>'; }).join('') + '</div>';
+    })
+    // 换行
+    .replace(/\n/g, '<br>');
+  return html;
+}
 
-const ACTION_TYPES = {
-  '生成今日计划': 'generate_daily',
-  '查看目标进度': 'goal_progress',
-  '调整计划': 'adjust_plan',
-  '分解月度目标': 'decompose_monthly',
+// ─── Tab 切换（快捷操作互斥显示） ───
+
+const ACTION_TABS = {
+  daily: { label: '📅 今日计划', action: '生成今日计划', type: 'generate_daily' },
+  progress: { label: '📊 目标进度', action: '查看目标进度', type: 'goal_progress' },
+  adjust: { label: '✏️ 调整计划', action: '调整计划', type: 'adjust_plan' },
+  decompose: { label: '🎯 分解月度', action: '分解月度目标', type: 'decompose_monthly' },
 };
 
-let currentActionFeedback = {};  // 存储用户的附加建议
+let currentActionTab = null;
 
-async function agentQuickAction(action) {
-  const actionType = ACTION_TYPES[action];
-  if (!actionType) return;
+function switchActionTab(tab) {
+  // 隐藏所有 tab 内容
+  document.querySelectorAll('.action-tab').forEach(function(el) { el.style.display = 'none'; });
+  document.getElementById('tab-welcome').style.display = 'none';
 
-  const today = new Date().toISOString().slice(0, 10);
-  const container = document.getElementById('agentMessages');
+  // 取消所有 chip 高亮
+  document.querySelectorAll('.chip').forEach(function(el) { el.style.background = ''; el.style.color = ''; });
+
+  if (currentActionTab === tab) {
+    // 再次点击同一个 → 取消选中，显示欢迎
+    currentActionTab = null;
+    document.getElementById('tab-welcome').style.display = 'block';
+    return;
+  }
+
+  currentActionTab = tab;
+  var chip = document.getElementById('chip-' + tab);
+  if (chip) { chip.style.background = 'var(--accent)'; chip.style.color = '#fff'; }
+
+  // 显示对应 tab
+  var tabEl = document.getElementById('tab-' + tab);
+  tabEl.style.display = 'block';
+  tabEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink-muted);">加载中...</div>';
+
+  // 加载内容
+  loadActionTab(tab);
+}
+
+async function loadActionTab(tab) {
+  var tabEl = document.getElementById('tab-' + tab);
+  var today = new Date().toISOString().slice(0, 10);
+  var info = ACTION_TABS[tab];
 
   // 检查缓存
-  const cacheRes = await api('/api/agent/action-cache?action_type=' + actionType + '&date_key=' + today);
+  var cacheRes = await api('/api/agent/action-cache?action_type=' + info.type + '&date_key=' + today);
 
   if (cacheRes.cached && cacheRes.result) {
-    // 有缓存 → 显示内容 + 操作按钮
-    const result = JSON.parse(cacheRes.result);
-    let content = result.content || result.summary || JSON.stringify(result);
-
-    // 构建带按钮的消息
-    appendAgentMsg('assistant', content, new Date().toISOString());
-
-    // 在消息下方追加操作按钮
-    const btnDiv = document.createElement('div');
-    btnDiv.style.cssText = 'display:flex;gap:6px;padding:0 0 8px;flex-wrap:wrap;';
-    btnDiv.innerHTML =
-      '<button onclick="regenerateAction(\'' + action + '\')" class="quick-btn" style="font-size:11px;">🔄 重新生成</button>' +
-      '<button onclick="showFeedbackInput(\'' + action + '\')" class="quick-btn" style="font-size:11px;">💡 加建议再生成</button>';
-    container.appendChild(btnDiv);
-    scrollToBottom();
+    var result = JSON.parse(cacheRes.result);
+    var content = result.content || result.summary || JSON.stringify(result);
+    renderActionTab(tab, content, true);
   } else {
     // 无缓存 → 显示生成按钮
-    const btnDiv = document.createElement('div');
-    btnDiv.style.cssText = 'display:flex;gap:8px;padding:4px 0 8px;';
-    btnDiv.innerHTML =
-      '<button onclick="doGenerate(\'' + action + '\')" class="btn btn-primary" style="flex:1;font-size:13px;padding:8px 12px;">🤖 点击生成' + action + '</button>';
-    container.appendChild(btnDiv);
-    scrollToBottom();
+    tabEl.innerHTML =
+      '<div style="text-align:center;padding:32px 16px;">' +
+      '<div style="font-size:40px;margin-bottom:12px;">🤖</div>' +
+      '<div style="font-size:14px;color:var(--ink);font-weight:600;margin-bottom:16px;">暂无' + info.label + '内容</div>' +
+      '<button onclick="doTabGenerate(\'' + tab + '\')" class="btn btn-primary" style="max-width:240px;margin:0 auto;">点击生成</button>' +
+      '</div>';
   }
 }
 
-async function doGenerate(action, feedback) {
-  const actionType = ACTION_TYPES[action];
-  const today = new Date().toISOString().slice(0, 10);
-  const container = document.getElementById('agentMessages');
+function renderActionTab(tab, content, showActions) {
+  var tabEl = document.getElementById('tab-' + tab);
+  var html = '<div class="markdown-body" style="line-height:1.7;font-size:14px;">' + renderMarkdown(content) + '</div>';
 
-  appendAgentMsg('user', action + (feedback ? '\n💡 建议：' + feedback : ''), new Date().toISOString());
-  showTyping();
+  if (showActions) {
+    html += '<div style="display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;">';
+    html += '<button onclick="doTabGenerate(\'' + tab + '\')" class="quick-btn" style="font-size:12px;">🔄 重新生成</button>';
+    html += '<button onclick="showTabFeedback(\'' + tab + '\')" class="quick-btn" style="font-size:12px;">💡 加建议再生成</button>';
+    html += '</div>';
+  }
+
+  tabEl.innerHTML = html;
+}
+
+async function doTabGenerate(tab, feedback) {
+  var tabEl = document.getElementById('tab-' + tab);
+  var today = new Date().toISOString().slice(0, 10);
+  var info = ACTION_TABS[tab];
+
+  tabEl.innerHTML = '<div style="text-align:center;padding:40px;"><div style="font-size:24px;margin-bottom:8px;">⏳</div><div style="color:var(--ink-muted);">正在生成中...</div></div>';
 
   try {
-    let result = {};
-    if (action === '生成今日计划') {
-      const startTime = document.getElementById('genStartTime')?.value || '08:00';
-      result = await api('/api/agent/generate-daily', {
+    if (tab === 'daily') {
+      var startTime = document.getElementById('genStartTime')?.value || '08:00';
+      var res = await api('/api/agent/generate-daily', {
         method: 'POST',
         body: JSON.stringify({ date: today, start_time: startTime, feedback: feedback || '' })
       });
-      hideTyping();
-      if (result.ok) {
-        const content = '✅ 今日计划已生成\n\n' + result.summary + '\n\n专注: ' + result.focus_minutes + '分钟 | 休息: ' + result.rest_minutes + '分钟 | 生活: ' + result.life_minutes + '分钟';
-        appendAgentMsg('assistant', content, new Date().toISOString());
-        // 缓存结果
+      if (res.ok) {
+        var content = '### ✅ 今日计划已生成\n\n' + res.summary + '\n\n---\n\n' +
+          '**专注:** ' + res.focus_minutes + '分钟 | **休息:** ' + res.rest_minutes + '分钟 | **生活:** ' + res.life_minutes + '分钟';
         await api('/api/agent/action-cache', {
           method: 'POST',
-          body: JSON.stringify({ action_type: actionType, date_key: today, result_json: JSON.stringify({ content: content }), user_feedback: feedback || '' })
+          body: JSON.stringify({ action_type: info.type, date_key: today, result_json: JSON.stringify({ content: content }), user_feedback: feedback || '' })
         });
+        renderActionTab(tab, content, true);
         loadTodaySchedule();
       } else {
-        appendAgentMsg('assistant', '生成失败：' + (result.error || '未知错误'), new Date().toISOString());
+        tabEl.innerHTML = '<div style="color:var(--danger);padding:16px;">生成失败：' + (res.error || '未知错误') + '</div>';
       }
-    } else if (action === '分解月度目标') {
-      const decomRes = await api('/api/agent/decompose-monthly', { method: 'POST' });
-      hideTyping();
+    } else if (tab === 'decompose') {
+      var decomRes = await api('/api/agent/decompose-monthly', { method: 'POST' });
       if (decomRes.ok) {
-        const ms = decomRes.milestones || [];
-        const content = '✅ 月度分解完成\n\n' + ms.map(function(m, i) { return (i+1) + '. ' + m.title; }).join('\n');
-        appendAgentMsg('assistant', content, new Date().toISOString());
+        var ms = decomRes.milestones || [];
+        var content = '### ✅ 月度分解完成\n\n' + ms.map(function(m, i) {
+          return '**' + (i+1) + '. ' + m.title + '**\n' + (m.target_actions ? m.target_actions.map(function(a) { return '- ' + a; }).join('\n') : '');
+        }).join('\n\n');
         await api('/api/agent/action-cache', {
           method: 'POST',
-          body: JSON.stringify({ action_type: actionType, date_key: today, result_json: JSON.stringify({ content: content }), user_feedback: feedback || '' })
+          body: JSON.stringify({ action_type: info.type, date_key: today, result_json: JSON.stringify({ content: content }), user_feedback: feedback || '' })
         });
+        renderActionTab(tab, content, true);
       } else {
-        appendAgentMsg('assistant', '分解失败：' + (decomRes.error || '未知错误'), new Date().toISOString());
+        tabEl.innerHTML = '<div style="color:var(--danger);padding:16px;">分解失败：' + (decomRes.error || '未知错误') + '</div>';
       }
     } else {
-      // 查看目标进度 / 调整计划 → 发送到 Agent 对话
-      const input = document.getElementById('agentInput');
-      input.value = feedback ? action + '\n建议：' + feedback : action;
+      // 目标进度 / 调整计划 → 通过 Agent 对话
+      var input = document.getElementById('agentInput');
+      input.value = feedback ? info.action + '\n建议：' + feedback : info.action;
       sendAgentMsg();
-      return;
+      // 切换到对话视图显示
+      tabEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--ink-muted);">已发送到对话，请查看对话区域</div>';
     }
   } catch(e) {
-    hideTyping();
-    appendAgentMsg('assistant', '请求失败：' + e.message, new Date().toISOString());
+    tabEl.innerHTML = '<div style="color:var(--danger);padding:16px;">请求失败：' + e.message + '</div>';
   }
 }
 
-function regenerateAction(action) {
-  doGenerate(action);
-}
-
-function showFeedbackInput(action) {
-  const feedback = prompt('输入建议或调整方向，让 LLM 生成更符合你需求的计划：');
+function showFeedbackInput(tab) {
+  var feedback = prompt('输入建议或调整方向，让 LLM 生成更符合你需求的内容：');
   if (feedback !== null && feedback.trim()) {
-    doGenerate(action, feedback.trim());
+    doTabGenerate(tab, feedback.trim());
   }
-}
-
-function scrollToBottom() {
-  const el = document.getElementById('agentMessages');
-  if (el) el.scrollTop = el.scrollHeight;
 }
 
 // ─── 语音输入 ───
@@ -1574,9 +1637,7 @@ async function loadTodaySchedule() {
 }
 
 async function generateDaily() {
-  const today = new Date().toISOString().slice(0, 10);
-  const startTime = document.getElementById('genStartTime').value || '08:00';
-  agentQuickAction('生成今日计划');
+  doTabGenerate('daily');
 }
 
 // ─── Toast ───
