@@ -361,8 +361,9 @@ body {
 }
 .phase-menstrual { background: #fff1f0; color: #cf1322; }
 .phase-follicular { background: #f6ffed; color: #389e0d; }
-.phase-ovulatory { background: #fff7e6; color: #d46b08; }
+.phase-ovulatory { background: #fff7e6; color: #fa8c16; }
 .phase-luteal { background: #f9f0ff; color: #722ed1; }
+.phase-next { background: #fff1f0; color: #cf1322; }
 
 .cycle-day-num {
   font-size: 48px;
@@ -872,24 +873,35 @@ body {
       <button class="top-bar-btn" onclick="showCycleForm()">+</button>
     </div>
 
+    <!-- 当前状态 -->
     <div class="card">
-      <div class="cycle-status">
-        <div id="cyclePhase" class="cycle-phase phase-menstrual">加载中...</div>
+      <div id="cycleStatus" style="text-align:center;padding:16px 8px;">
+        <div id="cyclePhase" class="cycle-phase phase-menstrual" style="margin:0 auto 8px;">加载中...</div>
         <div id="cycleDayNum" class="cycle-day-num">-</div>
         <div id="cycleDayLabel" class="cycle-day-label">等待数据</div>
+        <div id="cycleDateInfo" style="font-size:12px;color:var(--text2);margin-top:4px;"></div>
       </div>
     </div>
 
+    <!-- 周期时间线 -->
     <div class="card">
-      <div class="card-title">💡 各阶段建议</div>
-      <div style="font-size:13px;line-height:1.8;">
-        <div style="padding:8px;background:#fff1f0;border-radius:6px;margin-bottom:6px;"><strong>经期：</strong>多休息，避免劳累</div>
-        <div style="padding:8px;background:#f6ffed;border-radius:6px;margin-bottom:6px;"><strong>卵泡期：</strong>精力充沛，适合规划</div>
-        <div style="padding:8px;background:#fff7e6;border-radius:6px;margin-bottom:6px;"><strong>排卵期：</strong>情绪积极，适合约会</div>
-        <div style="padding:8px;background:#f9f0ff;border-radius:6px;"><strong>黄体期：</strong>多包容，避免争论</div>
+      <div class="card-title">📅 周期时间线</div>
+      <div id="cycleTimeline" style="padding:8px;"></div>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:10px;font-size:11px;flex-wrap:wrap;">
+        <span style="color:#cf1322;">● 经期</span>
+        <span style="color:#52c41a;">● 卵泡期</span>
+        <span style="color:#fa8c16;">● 排卵期</span>
+        <span style="color:#722ed1;">● 黄体期(PMS)</span>
       </div>
     </div>
 
+    <!-- 当前阶段建议 -->
+    <div class="card" id="phaseAdviceCard">
+      <div class="card-title">💡 当前阶段建议</div>
+      <div id="phaseAdvice" style="font-size:13px;line-height:1.8;"></div>
+    </div>
+
+    <!-- 历史记录 -->
     <div class="card">
       <div class="card-title">📋 历史记录</div>
       <div id="cycleHistory"></div>
@@ -1347,9 +1359,57 @@ async function saveAnnual() {
 // ─── 经期追踪 ───
 let cycles = [];
 
+const PHASE_ADVICE = {
+  menstrual: {
+    name: '经期', emoji: '🩸', color: '#cf1322', bg: '#fff1f0',
+    tips: ['多休息，避免剧烈运动', '注意保暖，少碰冷水', '补充铁质食物', '允许自己慢下来，不必内疚']
+  },
+  follicular: {
+    name: '卵泡期', emoji: '🌱', color: '#389e0d', bg: '#f6ffed',
+    tips: ['精力逐渐回升，适合制定新计划', '大胆尝试新事物', '安排重要会议和决策', '运动表现好，适合高强度训练']
+  },
+  ovulatory: {
+    name: '排卵期', emoji: '🌟', color: '#fa8c16', bg: '#fff7e6',
+    tips: ['情绪积极，社交能力最强', '适合约会、团建、演讲', '沟通效率最高', '注意不要过度承诺']
+  },
+  luteal: {
+    name: '黄体期(PMS)', emoji: '💜', color: '#722ed1', bg: '#f9f0ff',
+    tips: ['情绪波动是正常的，多包容自己', '避免重要争吵和决定', '适合做重复性、细节性工作', '提前安排好经期工作量', '识别焦虑来源，用行动化解']
+  },
+  next: {
+    name: '新周期', emoji: '🔄', color: '#cf1322', bg: '#fff1f0',
+    tips: ['新周期开始，可以记录经期', '回顾上个周期的收获', '调整本月计划']
+  }
+};
+
+function getCycleInfo(lastCycle) {
+  const start = new Date(lastCycle.start_date + 'T00:00:00');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dayInCycle = Math.floor((today - start) / 86400000) + 1;
+  const periodLen = lastCycle.period_length || 5;
+  const cycleLen = lastCycle.cycle_length || 28;
+
+  let phaseKey;
+  if (dayInCycle <= periodLen) {
+    phaseKey = 'menstrual';
+  } else if (dayInCycle <= cycleLen - 14) {
+    phaseKey = 'follicular';
+  } else if (dayInCycle <= cycleLen - 12) {
+    phaseKey = 'ovulatory';
+  } else if (dayInCycle <= cycleLen) {
+    phaseKey = 'luteal';
+  } else {
+    phaseKey = 'next';
+  }
+
+  return { dayInCycle, periodLen, cycleLen, phaseKey };
+}
+
 async function loadCycle() {
   cycles = await api('/api/cycle');
   renderCycleStatus();
+  renderCycleTimeline();
   renderCycleHistory();
 }
 
@@ -1358,47 +1418,104 @@ function renderCycleStatus() {
     document.getElementById('cyclePhase').textContent = '暂无记录';
     document.getElementById('cycleDayNum').textContent = '-';
     document.getElementById('cycleDayLabel').textContent = '点击右上角 + 添加记录';
+    document.getElementById('cycleDateInfo').textContent = '';
+    document.getElementById('phaseAdvice').innerHTML = '<div style="color:var(--text2);">先添加一条经期记录开始追踪</div>';
     return;
   }
 
   const last = cycles[0];
-  const start = new Date(last.start_date);
+  const info = getCycleInfo(last);
+  const advice = PHASE_ADVICE[info.phaseKey] || PHASE_ADVICE.next;
   const today = new Date();
-  const dayInCycle = Math.floor((today - start) / 86400000) + 1;
-  const periodLen = last.period_length || 5;
-  const cycleLen = last.cycle_length || 28;
+  const todayStr = today.getFullYear() + '/' + (today.getMonth()+1) + '/' + today.getDate();
 
-  let phase, phaseClass;
-  if (dayInCycle <= periodLen) {
-    phase = '经期'; phaseClass = 'phase-menstrual';
-  } else if (dayInCycle <= 13) {
-    phase = '卵泡期'; phaseClass = 'phase-follicular';
-  } else if (dayInCycle <= 15) {
-    phase = '排卵期'; phaseClass = 'phase-ovulatory';
-  } else if (dayInCycle <= cycleLen) {
-    phase = '黄体期'; phaseClass = 'phase-luteal';
-  } else {
-    phase = '下一周期'; phaseClass = 'phase-menstrual';
+  const start = new Date(last.start_date + 'T00:00:00');
+  const nextStart = new Date(start.getTime() + info.cycleLen * 86400000);
+  const daysUntilNext = Math.ceil((nextStart - today) / 86400000);
+  const nextDateStr = (nextStart.getMonth()+1) + '/' + nextStart.getDate();
+
+  document.getElementById('cyclePhase').textContent = advice.emoji + ' ' + advice.name;
+  document.getElementById('cyclePhase').className = 'cycle-phase phase-' + info.phaseKey;
+
+  const actualDay = info.dayInCycle > info.cycleLen ? info.dayInCycle - info.cycleLen : info.dayInCycle;
+  document.getElementById('cycleDayNum').textContent = actualDay;
+  document.getElementById('cycleDayLabel').textContent = '周期第 ' + actualDay + ' 天 / 共 ' + info.cycleLen + ' 天';
+  document.getElementById('cycleDateInfo').textContent = todayStr + ' · 下次经期预计 ' + nextDateStr + (daysUntilNext > 0 ? '（' + daysUntilNext + '天后）' : '（已到）');
+
+  document.getElementById('phaseAdvice').innerHTML =
+    '<div style="padding:10px;background:' + advice.bg + ';border-radius:8px;border-left:3px solid ' + advice.color + ';">' +
+    '<strong>' + advice.emoji + ' ' + advice.name + ' · 第' + actualDay + '天</strong>' +
+    '<div style="margin-top:6px;">' +
+    advice.tips.map(function(t) { return '<div style="padding:2px 0;">• ' + t + '</div>'; }).join('') +
+    '</div></div>';
+}
+
+function renderCycleTimeline() {
+  var container = document.getElementById('cycleTimeline');
+  if (!cycles.length) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text2);font-size:13px;padding:16px;">暂无数据</div>';
+    return;
   }
 
-  document.getElementById('cyclePhase').textContent = phase;
-  document.getElementById('cyclePhase').className = 'cycle-phase ' + phaseClass;
-  document.getElementById('cycleDayNum').textContent = dayInCycle > cycleLen ? dayInCycle - cycleLen : dayInCycle;
-  document.getElementById('cycleDayLabel').textContent = `周期第 ${dayInCycle > cycleLen ? dayInCycle - cycleLen : dayInCycle} 天`;
+  var last = cycles[0];
+  var info = getCycleInfo(last);
+  var start = new Date(last.start_date + 'T00:00:00');
+
+  var phases = [];
+  for (var d = 1; d <= info.cycleLen; d++) {
+    var pKey;
+    if (d <= info.periodLen) pKey = 'menstrual';
+    else if (d <= info.cycleLen - 14) pKey = 'follicular';
+    else if (d <= info.cycleLen - 12) pKey = 'ovulatory';
+    else pKey = 'luteal';
+    phases.push({ day: d, phaseKey: pKey });
+  }
+
+  var colors = { menstrual: '#cf1322', follicular: '#52c41a', ovulatory: '#fa8c16', luteal: '#722ed1' };
+  var actualDay = info.dayInCycle > info.cycleLen ? info.dayInCycle - info.cycleLen : info.dayInCycle;
+
+  var html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;">';
+  ['一','二','三','四','五','六','日'].forEach(function(d) {
+    html += '<div style="font-size:10px;color:var(--text2);padding:2px 0;">周' + d + '</div>';
+  });
+
+  var startDow = (start.getDay() + 6) % 7;
+  for (var i = 0; i < startDow; i++) {
+    html += '<div></div>';
+  }
+
+  phases.forEach(function(p) {
+    var isToday = p.day === actualDay;
+    var color = colors[p.phaseKey];
+    var bg = isToday ? color : 'transparent';
+    var textColor = isToday ? '#fff' : color;
+    var border = '2px solid ' + (isToday ? color : 'transparent');
+    var fontWeight = isToday ? '700' : '400';
+    var shadow = isToday ? 'box-shadow:0 0 0 3px ' + color + '33;' : '';
+
+    html += '<div style="width:32px;height:32px;line-height:32px;margin:0 auto;border-radius:50%;font-size:12px;background:' + bg + ';color:' + textColor + ';border:' + border + ';font-weight:' + fontWeight + ';' + shadow + '">' + p.day + '</div>';
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
 }
 
 function renderCycleHistory() {
-  const container = document.getElementById('cycleHistory');
+  var container = document.getElementById('cycleHistory');
   if (!cycles.length) {
     container.innerHTML = '<div class="empty" style="padding:16px;">暂无记录</div>';
     return;
   }
-  container.innerHTML = cycles.slice(0, 6).map(c => `
-    <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:6px;font-size:13px;">
-      <div>${c.start_date} · 经期${c.period_length}天 · 周期${c.cycle_length}天</div>
-      ${c.notes ? `<div style="color:var(--text2);margin-top:4px;">${c.notes}</div>` : ''}
-    </div>
-  `).join('');
+  container.innerHTML = cycles.slice(0, 6).map(function(c) {
+    var end = new Date(new Date(c.start_date + 'T00:00:00').getTime() + c.cycle_length * 86400000);
+    return '<div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:6px;font-size:13px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+      '<div><div style="font-weight:500;">' + c.start_date + ' 开始</div>' +
+      '<div style="font-size:12px;color:var(--text2);margin-top:2px;">经期' + c.period_length + '天 · 周期' + c.cycle_length + '天</div></div>' +
+      '<div style="font-size:11px;color:var(--text2);">→ ' + (end.getMonth()+1) + '/' + end.getDate() + '</div></div>' +
+      (c.notes ? '<div style="font-size:12px;color:var(--text2);margin-top:4px;">📝 ' + c.notes + '</div>' : '') +
+      '</div>';
+  }).join('');
 }
 
 function showCycleForm() {
