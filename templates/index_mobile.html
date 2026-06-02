@@ -1416,8 +1416,20 @@ async function doTabGenerate(tab, feedback) {
         body: JSON.stringify({ date: today, start_time: startTime, feedback: feedback || '' })
       });
       if (res.ok) {
-        var content = '### ✅ 今日计划已生成\n\n' + res.summary + '\n\n---\n\n' +
-          '**专注:** ' + res.focus_minutes + '分钟 | **休息:** ' + res.rest_minutes + '分钟 | **生活:** ' + res.life_minutes + '分钟';
+        var blocks = res.blocks || [];
+        var lines = blocks.map(function(b) {
+          var icon = b.type.indexOf('focus') >= 0 ? '🔵' : b.type.indexOf('rest') >= 0 ? '🟢' : b.type === 'life' ? '🟠' : '⚫';
+          var tag = b.type.indexOf('focus') >= 0 ? '专注' : b.type.indexOf('rest') >= 0 ? '休息' : b.type === 'life' ? '生活' : '睡眠';
+          return '| ' + b.start + ' | ' + icon + ' ' + (b.label || tag) + ' | ' + b.duration_min + '分钟 | ' + tag + ' |';
+        });
+        var table = '| 时间 | 内容 | 时长 | 类型 |\n|------|------|------|------|\n' + lines.join('\n');
+        var content = '### ✅ ' + res.date + ' 日程安排\n\n' +
+          table + '\n\n---\n\n' +
+          '### 📊 时间分配\n\n' +
+          '- 🔵 **专注:** ' + res.focus_minutes + '分钟\n' +
+          '- 🟢 **休息:** ' + res.rest_minutes + '分钟\n' +
+          '- 🟠 **生活:** ' + res.life_minutes + '分钟\n\n' +
+          '> ' + (res.summary || '今日计划已生成');
         await api('/api/agent/action-cache', {
           method: 'POST',
           body: JSON.stringify({ action_type: info.type, date_key: today, result_json: JSON.stringify({ content: content }), user_feedback: feedback || '' })
