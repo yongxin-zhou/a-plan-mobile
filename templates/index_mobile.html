@@ -83,11 +83,13 @@
         <button class="top-bar-btn" id="btn-agent-settings" onclick="switchAgentView('settings')">⚙️</button>
       </div>
     </div>
-    <!-- 价值观横幅 -->
-    <div style="padding:8px 16px;background:linear-gradient(135deg,#fdf6e3,#fff8e7);border-bottom:1px solid #f0e6d3;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;">
-      <span style="font-size:12px;color:#8a7a5b;">
-        🌟 智慧 · 高能量 · 长期主义 · 减少焦虑 · 识别环境 · 知己 · 齐家 · 治国
-      </span>
+    <!-- 价值观横幅（可折叠） -->
+    <div id="valuesBanner" onclick="toggleValues()" style="padding:6px 16px;background:linear-gradient(135deg,#fdf6e3,#fff8e7);border-bottom:1px solid #f0e6d3;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:12px;color:#8a7a5b;font-weight:500;">🌟 价值观</span>
+      <span id="valuesArrow" style="font-size:10px;color:#8a7a5b;transition:transform 0.2s;">▼</span>
+    </div>
+    <div id="valuesContent" style="display:none;padding:8px 16px 10px;background:#fdf6e3;border-bottom:1px solid #f0e6d3;font-size:12px;color:#8a7a5b;line-height:1.8;">
+      智慧 · 高能量 · 长期主义 · 减少焦虑 · 识别环境 · 知己 · 齐家 · 治国
     </div>
 
     <!-- 视图1：对话界面 -->
@@ -1270,6 +1272,19 @@ async function sendAgentMsg() {
   } catch(e) {
     hideTyping();
     appendAgentMsg('assistant', '请求失败：' + e.message, new Date().toISOString());
+  }
+}
+
+// ─── 价值观横幅折叠 ───
+function toggleValues() {
+  var content = document.getElementById('valuesContent');
+  var arrow = document.getElementById('valuesArrow');
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    arrow.style.transform = 'rotate(180deg)';
+  } else {
+    content.style.display = 'none';
+    arrow.style.transform = 'rotate(0deg)';
   }
 }
 
