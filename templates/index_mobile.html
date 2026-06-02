@@ -1428,12 +1428,23 @@ async function doTabGenerate(tab, feedback) {
         tabEl.innerHTML = '<div style="color:var(--danger);padding:16px;">分解失败：' + (decomRes.error || '未知错误') + '</div>';
       }
     } else {
-      // 目标进度 / 调整计划 → 通过 Agent 对话
-      var input = document.getElementById('agentInput');
-      input.value = feedback ? info.action + '\n建议：' + feedback : info.action;
-      sendAgentMsg();
-      // 切换到对话视图显示
-      tabEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--ink-muted);">已发送到对话，请查看对话区域</div>';
+      // 目标进度 / 调整计划 → 直接调 Agent 对话 API
+      var msg = feedback ? info.action + '\n建议：' + feedback : info.action;
+      var intent = tab === 'progress' ? 'goal_update' : 'plan_adjust';
+      var chatRes = await api('/api/agent/chat', {
+        method: 'POST',
+        body: JSON.stringify({ message: msg, intent: intent })
+      });
+      if (chatRes && chatRes.reply) {
+        var content = chatRes.reply;
+        await api('/api/agent/action-cache', {
+          method: 'POST',
+          body: JSON.stringify({ action_type: info.type, date_key: today, result_json: JSON.stringify({ content: content }), user_feedback: feedback || '' })
+        });
+        renderActionTab(tab, content, true);
+      } else {
+        tabEl.innerHTML = '<div style="color:var(--danger);padding:16px;">请求失败：' + (chatRes.error || '未知错误') + '</div>';
+      }
     }
   } catch(e) {
     tabEl.innerHTML = '<div style="color:var(--danger);padding:16px;">请求失败：' + e.message + '</div>';
