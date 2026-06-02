@@ -1438,7 +1438,7 @@ def agent_chat(req: AgentChatRequest, db: Session = Depends(get_db)):
 
     # 调用 LLM
     api_key = os.environ.get("LLM_API_KEY", "")
-    api_base = os.environ.get("LLM_API_BASE", "https://api.deepseek.com")
+    api_base = os.environ.get("LLM_BASE_URL", "https://api.deepseek.com")
     model = os.environ.get("LLM_MODEL", "deepseek-chat")
 
     reply_text = ""
@@ -1548,7 +1548,7 @@ type可选值：focus_90, focus_60, rest_15, rest_10, life, sleep
     summary = ""
 
     api_key = os.environ.get("LLM_API_KEY", "")
-    api_base = os.environ.get("LLM_API_BASE", "https://api.deepseek.com")
+    api_base = os.environ.get("LLM_BASE_URL", "https://api.deepseek.com")
     model = os.environ.get("LLM_MODEL", "deepseek-chat")
 
     if api_key:
@@ -1683,7 +1683,7 @@ def decompose_monthly(year: int = None, month: int = None, db: Session = Depends
 
     milestones = []
     api_key = os.environ.get("LLM_API_KEY", "")
-    api_base = os.environ.get("LLM_API_BASE", "https://api.deepseek.com")
+    api_base = os.environ.get("LLM_BASE_URL", "https://api.deepseek.com")
     model = os.environ.get("LLM_MODEL", "deepseek-chat")
 
     if api_key:
