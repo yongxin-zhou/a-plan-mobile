@@ -59,8 +59,8 @@
       <span class="nav-label">年度</span>
     </div>
     <div class="nav-item" onclick="switchPage('cycle', this)">
-      <span class="nav-icon">🩸</span>
-      <span class="nav-label">经期</span>
+      <span class="nav-icon">❤️</span>
+      <span class="nav-label">Love</span>
     </div>
     <div class="nav-item" onclick="switchPage('more', this)">
       <span class="nav-icon">☰</span>
@@ -221,16 +221,16 @@
         <div id="memoryList"></div>
       </div>
     </div>
-  </div>
 
-  <!-- 今日日程（首页底部） -->
-  <div style="padding:8px 16px;">
-    <div class="card">
-      <div class="card-title">⏰ 今日日程</div>
-      <div id="todayTimeline"></div>
-      <div style="display:flex;gap:8px;margin-top:12px;">
-        <input id="genStartTime" type="time" value="08:00" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:var(--r-md);font-size:13px;">
-        <button class="btn btn-primary" style="flex:1;font-size:13px;padding:8px 12px;" onclick="generateDaily()">🤖 生成今日计划</button>
+    <!-- 今日日程（agent-page 底部） -->
+    <div style="padding:0 0 8px;">
+      <div class="card" style="margin:0 16px;">
+        <div class="card-title">⏰ 今日日程</div>
+        <div id="todayTimeline"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <input id="genStartTime" type="time" value="08:00" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:var(--r-md);font-size:13px;">
+          <button class="btn btn-primary" style="flex:1;font-size:13px;padding:8px 12px;" onclick="generateDaily()">🤖 生成今日计划</button>
+        </div>
       </div>
     </div>
   </div>
@@ -342,7 +342,7 @@
   <!-- ========== 经期追踪页面 ========== -->
   <div id="page-cycle" class="page">
     <div class="top-bar">
-      <div class="top-bar-title">🩸 经期追踪</div>
+      <div class="top-bar-title">❤️ Love</div>
       <button class="top-bar-btn" onclick="showCycleForm()">+</button>
     </div>
 
