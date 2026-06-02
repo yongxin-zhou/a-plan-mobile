@@ -79,6 +79,7 @@
       <div style="display:flex;gap:8px;">
         <button class="top-bar-btn" id="btn-agent-chat" onclick="switchAgentView('chat')" style="background:var(--accent-light);">💬</button>
         <button class="top-bar-btn" id="btn-agent-goals" onclick="switchAgentView('goals')">🎯</button>
+        <button class="top-bar-btn" id="btn-agent-energy" onclick="switchAgentView('energy')">⚡</button>
         <button class="top-bar-btn" id="btn-agent-settings" onclick="switchAgentView('settings')">⚙️</button>
       </div>
     </div>
@@ -132,6 +133,29 @@
     </div>
 
     <!-- 视图3：Agent 设置 -->
+    <!-- 视图3：能量自查 (霍金斯能量表) -->
+    <div id="agent-energy-view" style="display:none;padding:12px 16px;">
+      <div class="card">
+        <div class="card-title">⚡ 霍金斯能量表自查</div>
+        <p style="font-size:12px;color:var(--ink-muted);margin-bottom:12px;line-height:1.5;">
+          大卫·霍金斯《力量与能量》意识地图。<br>
+          <strong>200 是分界线</strong>：以下为低能量（消耗性），以上为高能量（建设性）。
+        </p>
+        <div id="energyScale"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🎯 今日能量定位</div>
+        <p style="font-size:12px;color:var(--ink-muted);margin-bottom:8px;">对照上表，此刻你在哪里？</p>
+        <div id="energyPicker"></div>
+        <div id="energyResult" style="display:none;margin-top:12px;"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📈 提升路径</div>
+        <div id="energyPath" style="font-size:13px;line-height:1.6;"></div>
+      </div>
+    </div>
+
+    <!-- 视图4：Agent 设置 -->
     <div id="agent-settings-view" style="display:none;padding:12px 16px;">
       <!-- Agent 人格 -->
       <div class="card">
@@ -1144,11 +1168,14 @@ function switchAgentView(view) {
   agentView = view;
   document.getElementById('agent-chat-view').style.display = view === 'chat' ? 'flex' : 'none';
   document.getElementById('agent-goals-view').style.display = view === 'goals' ? 'block' : 'none';
+  document.getElementById('agent-energy-view').style.display = view === 'energy' ? 'block' : 'none';
   document.getElementById('agent-settings-view').style.display = view === 'settings' ? 'block' : 'none';
   document.getElementById('btn-agent-chat').style.background = view === 'chat' ? 'var(--accent-light)' : 'var(--bg)';
   document.getElementById('btn-agent-goals').style.background = view === 'goals' ? 'var(--accent-light)' : 'var(--bg)';
+  document.getElementById('btn-agent-energy').style.background = view === 'energy' ? 'var(--accent-light)' : 'var(--bg)';
   document.getElementById('btn-agent-settings').style.background = view === 'settings' ? 'var(--accent-light)' : 'var(--bg)';
   if (view === 'goals') { loadStrategicGoals(); loadTodaySchedule(); }
+  if (view === 'energy') { renderEnergyScale(); renderEnergyPicker(); renderEnergyPath(); }
   if (view === 'settings') { loadAgentConfig(); loadUserProfile(); loadMemories(); }
 }
 
@@ -1415,6 +1442,131 @@ async function generateDaily() {
 }
 
 // ─── Toast ───
+
+// ─── 霍金斯能量表 ───
+const HAWKINS_SCALE = [
+  { level: 20,  name: '羞耻',   en: 'Shame',     color: '#67000d', desc: '极度自我否定，感觉自己毫无价值', tip: '这是最低能量。你不需要一个人扛，找信任的人说说话。', path: '→ 内疚(30)：从「我不好」到「我做了不好的事」' },
+  { level: 30,  name: '内疚',   en: 'Guilt',     color: '#8B0000', desc: '自责、懊悔，反复回放犯错的瞬间', tip: '内疚说明你有道德感。接受不完美的自己，原谅自己。', path: '→ 冷漠(50)：从自责到麻木' },
+  { level: 50,  name: '冷漠',   en: 'Apathy',    color: '#A0522D', desc: '无欲无求，提不起兴趣，觉得什么都无所谓', tip: '冷漠是长期耗竭的信号。允许自己休息，不要强迫自己振作。', path: '→ 悲伤(75)：开始允许情绪流动' },
+  { level: 75,  name: '悲伤',   en: 'Grief',     color: '#8B4513', desc: '失落、哀伤、怀念，沉浸在遗憾中', tip: '悲伤是正常的。允许自己哭出来，这是疗愈的开始。', path: '→ 恐惧(100)：开始意识到威胁' },
+  { level: 100, name: '恐惧',   en: 'Fear',      color: '#B8860B', desc: '焦虑、担忧、对未来不确定性的害怕', tip: '恐惧说明你在乎。把模糊的焦虑变成具体的问题，然后逐个解决。', path: '→ 欲望(125)：从恐惧中生出行动力' },
+  { level: 125, name: '欲望',   en: 'Desire',    color: '#DAA520', desc: '渴望、贪婪、想要更多，被欲望驱动', tip: '欲望是动力，但不要被它控制。区分「需要」和「想要」。', path: '→ 愤怒(150)：欲望受阻时的爆发' },
+  { level: 150, name: '愤怒',   en: 'Anger',     color: '#CD853F', desc: '不满、怨恨、暴躁，觉得不公平', tip: '愤怒是能量！说明你有力量感。关键是不伤害他人地表达它。', path: '→ 骄傲(175)：从对抗到自我肯定' },
+  { level: 175, name: '骄傲',   en: 'Pride',     color: '#D2691E', desc: '自我膨胀、优越感、防御心强', tip: '骄傲比愤怒高一级，但它建立在外部认同上。真正的自信不需要证明。', path: '→ 勇气(200)★ 关键分界线 ★' },
+  { level: 200, name: '勇气',   en: 'Courage',   color: '#228B22', desc: '★ 分界线 ★ 开始面对现实，承担责任，愿意改变', tip: '恭喜！你进入了建设性能量区。这里是一切成长的起点。', path: '→ 中立(250)：从非黑即白到灵活' },
+  { level: 250, name: '中立',   en: 'Neutrality',color: '#2E8B57', desc: '客观、灵活、不执着于对错，内心平和', tip: '中立不是冷漠，是超越了二元对立。你开始看到多面性。', path: '→ 主动(310)：从被动到主动出击' },
+  { level: 310, name: '主动',   en: 'Willingness',color: '#3CB371', desc: '积极主动、乐于学习、接受变化', tip: '主动意味着你不再等别人推你，自己就是发动机。', path: '→ 接纳(350)：从努力到自然' },
+  { level: 350, name: '接纳',   en: 'Acceptance',color: '#48D1CC', desc: '接纳不完美、包容差异、内心真正平和', tip: '接纳≠躺平。是看清现实后依然选择前行。齐家的基础。', path: '→ 理性(400)：从感受到洞察' },
+  { level: 400, name: '理性',   en: 'Reason',    color: '#6495ED', desc: '逻辑清晰、善于分析、能看到因果链', tip: '理性是智慧的入口。但别只停在这里——理性+感性=完整。', path: '→ 爱(500)：从头脑到心灵' },
+  { level: 500, name: '爱',     en: 'Love',      color: '#9370DB', desc: '无条件的爱、慈悲、利他，关注他人福祉', tip: '爱是永恒的力量。不是控制，是给予。齐家的最高境界。', path: '→ 喜悦(540)：从爱到绽放' },
+  { level: 540, name: '喜悦',   en: 'Joy',       color: '#BA55D3', desc: '内在喜悦、感恩、持久的幸福感', tip: '喜悦不需要条件。它来自内心，不依赖外物。', path: '→ 平和(600)：从喜悦到宁静' },
+  { level: 600, name: '平和',   en: 'Peace',     color: '#DA70D6', desc: '极致宁静、合一感、超越自我', tip: '平和是最高的人类意识状态之一。活在当下。', path: '→ 开悟(700+)：意识的终极' },
+  { level: 700, name: '开悟',   en: 'Enlightenment', color: '#EE82EE', desc: '意识的最高境界，纯粹的觉知', tip: '极少数人能达到。但每次冥想、每次专注，都在靠近。', path: '' },
+];
+
+function renderEnergyScale() {
+  const container = document.getElementById('energyScale');
+  const maxLevel = 700;
+  container.innerHTML = HAWKINS_SCALE.map(item => {
+    const width = Math.max(8, (item.level / maxLevel) * 100);
+    const isThreshold = item.level === 200;
+    return '<div style="margin-bottom:6px;' + (isThreshold ? 'border:1px dashed var(--accent);padding:6px;border-radius:6px;margin:8px 0;' : '') + '">' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<div style="width:42px;font-size:11px;font-weight:700;color:' + item.color + ';text-align:right;">' + item.level + '</div>' +
+      '<div style="flex:1;">' +
+      '<div style="height:8px;background:var(--surface-1);border-radius:4px;overflow:hidden;">' +
+      '<div style="height:100%;width:' + width + '%;background:' + item.color + ';border-radius:4px;transition:width 0.3s;"></div>' +
+      '</div>' +
+      '</div>' +
+      '<div style="width:70px;font-size:12px;font-weight:600;color:' + item.color + ';">' + item.name + '</div>' +
+      '</div>' +
+      '<div style="margin-left:50px;font-size:11px;color:var(--ink-muted);margin-top:2px;">' + item.desc + '</div>' +
+      (isThreshold ? '<div style="margin-left:50px;font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">★ 200 分界线：以下消耗性，以上建设性 ★</div>' : '') +
+      '</div>';
+  }).join('');
+}
+
+function renderEnergyPicker() {
+  const container = document.getElementById('energyPicker');
+  const saved = parseInt(localStorage.getItem('hawkins_level') || '200');
+  container.innerHTML = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">' +
+    HAWKINS_SCALE.map(item => {
+      const isSelected = item.level === saved;
+      const isLow = item.level < 200;
+      return '<button onclick="selectEnergy(' + item.level + ')" style="padding:6px 2px;border-radius:6px;font-size:10px;font-weight:500;border:1px solid ' +
+        (isSelected ? item.color : 'var(--border)') + ';background:' +
+        (isSelected ? item.color : 'var(--canvas)') + ';color:' +
+        (isSelected ? '#fff' : item.color) + ';cursor:pointer;text-align:center;">' +
+        item.level + ' ' + item.name + '</button>';
+    }).join('') + '</div>';
+}
+
+function selectEnergy(level) {
+  localStorage.setItem('hawkins_level', level);
+  const item = HAWKINS_SCALE.find(i => i.level === level);
+  if (!item) return;
+  const isLow = level < 200;
+  const result = document.getElementById('energyResult');
+  result.style.display = 'block';
+  result.innerHTML =
+    '<div class="callout" style="border-left:3px solid ' + item.color + ';background:' + item.color + '11;">' +
+    '<span class="callout-icon">' + (isLow ? '⚠️' : '✨') + '</span>' +
+    '<div><strong style="color:' + item.color + ';">' + item.name + '（' + item.level + '）</strong><br>' +
+    '<span style="font-size:12px;">' + item.tip + '</span></div></div>' +
+    (item.path ? '<div style="font-size:12px;color:var(--ink-muted);margin-top:6px;padding-left:24px;">📈 ' + item.path + '</div>' : '');
+
+  // 记录到 Agent 记忆
+  api('/api/agent/memory', {
+    method: 'POST',
+    body: JSON.stringify({
+      title: '能量自查：' + item.name + '(' + item.level + ')',
+      content: '用户自评处于霍金斯能量表 ' + item.name + ' 级别（' + item.level + '）。' + item.tip,
+      category: 'observation',
+      source: 'user',
+      strength: isLow ? 'medium' : 'weak'
+    })
+  });
+  renderEnergyPicker();
+  showToast('已记录能量状态');
+}
+
+function renderEnergyPath() {
+  const current = parseInt(localStorage.getItem('hawkins_level') || '200');
+  const container = document.getElementById('energyPath');
+  // 找到当前能量等级的下一个提升路径
+  const currentIdx = HAWKINS_SCALE.findIndex(i => i.level === current);
+  const tips = [];
+  if (current < 200) {
+    tips.push('🔴 你当前在低能量区（<200）。这是正常的，每个人都会经历。');
+    tips.push('💡 <strong>第一步</strong>：承认当下的感受，不评判自己。');
+    tips.push('💡 <strong>第二步</strong>：做一件小事——散步10分钟、深呼吸、写三件感恩的事。');
+    tips.push('💡 <strong>第三步</strong>：找一个你信任的人聊聊。');
+    tips.push('🌟 目标：到达「勇气(200)」——开始面对现实，承担责任。');
+  } else if (current < 310) {
+    tips.push('🟢 你已经在建设性能量区了！');
+    tips.push('💡 <strong>提升关键</strong>：从被动反应转向主动选择。');
+    tips.push('💡 每天问自己：「今天我能主动做什么？」');
+    tips.push('💡 尝试：冥想10分钟 / 运动20分钟 / 读30分钟经典。');
+  } else if (current < 500) {
+    tips.push('🌟 你处于高能量区！继续保持。');
+    tips.push('💡 <strong>提升关键</strong>：从理性分析走向心灵感受。');
+    tips.push('💡 尝试：感恩练习 / 无条件帮助他人 / 与自然连接。');
+    tips.push('💡 齐家的最高境界是「爱(500)」——无条件的给予。');
+  } else {
+    tips.push('✨ 你处于极高能量区！这是难得的状态。');
+    tips.push('💡 <strong>保持</strong>：持续冥想、保持觉知、活在当下。');
+    tips.push('💡 <strong>传递</strong>：将这份能量分享给身边的人。');
+  }
+  // 通用建议
+  tips.push('');
+  tips.push('📚 <strong>提升能量的日常练习</strong>：');
+  tips.push('• 🧘 冥想（每天10分钟，从200→400+）');
+  tips.push('• 📖 读经典（四书五经、道德经，滋养智慧）');
+  tips.push('• 🏃 运动（跑步/力量训练，提升身体能量）');
+  tips.push('• 🙏 感恩（每天写3件感恩的事）');
+  tips.push('• 👨‍👩‍👧 齐家（高质量陪伴家人，经营亲密关系）');
+  container.innerHTML = tips.join('<br>');
+}
 
 // ─── Agent 设置：人格配置 ───
 async function loadAgentConfig() {
