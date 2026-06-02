@@ -53,10 +53,9 @@
       <span class="nav-icon">🤖</span>
       <span class="nav-label">Agent</span>
     </div>
-
-    <div class="nav-item" onclick="switchPage('annual', this)">
-      <span class="nav-icon">🎯</span>
-      <span class="nav-label">年度</span>
+    <div class="nav-item" onclick="switchPage('schedule', this)">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">日程</span>
     </div>
     <div class="nav-item" onclick="switchPage('cycle', this)">
       <span class="nav-icon">❤️</span>
@@ -222,10 +221,17 @@
       </div>
     </div>
 
-    <!-- 今日日程（agent-page 底部） -->
-    <div style="padding:0 0 8px;">
-      <div class="card" style="margin:0 16px;">
-        <div class="card-title">⏰ 今日日程</div>
+    <!-- 今日日程已移至独立页面 --\>
+  </div>
+
+  <!-- ========== 日程页面 ========== -->
+  <div id="page-schedule" class="page">
+    <div class="top-bar">
+      <div class="top-bar-title">📅 今日日程</div>
+      <button class="top-bar-btn" onclick="loadTodaySchedule()">🔄</button>
+    </div>
+    <div style="padding:12px 16px;">
+      <div class="card">
         <div id="todayTimeline"></div>
         <div style="display:flex;gap:8px;margin-top:12px;">
           <input id="genStartTime" type="time" value="08:00" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:var(--r-md);font-size:13px;">
@@ -328,15 +334,11 @@
   <!-- ========== 年度规划页面 ========== -->
   <div id="page-annual" class="page">
     <div class="top-bar">
-      <div class="top-bar-title">🎯 年度规划</div>
-      <button class="top-bar-btn" onclick="addAnnualItem()">+</button>
+      <div class="top-bar-title">🎯 年度目标</div>
+      <button class="top-bar-btn" onclick="addNewGoal()">+</button>
     </div>
 
-    <div id="annualList" style="padding:12px 16px;"></div>
-
-    <div style="padding:16px;">
-      <button onclick="saveAnnual()" class="btn btn-primary">💾 保存</button>
-    </div>
+    <div id="annualGoalList" style="padding:8px 16px;"></div>
   </div>
 
   <!-- ========== 经期追踪页面 ========== -->
@@ -401,6 +403,9 @@
         </div>
         <div style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="switchPage('agreements', null)">
           🤝 夫妻约定 <span style="float:right;color:var(--text2);">›</span>
+        </div>
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="switchPage('annual', null)">
+          🎯 年度目标 <span style="float:right;color:var(--text2);">›</span>
         </div>
         <div style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="switchPage('week', null)">
           📅 周计划 <span style="float:right;color:var(--text2);">›</span>
@@ -600,7 +605,8 @@ function switchPage(pageName, navEl) {
 
   // 加载数据
   if (pageName === 'agent') { loadAgentHistory(); loadStrategicGoals(); }
-  if (pageName === 'annual') loadAnnual();
+  if (pageName === 'schedule') { loadTodaySchedule(); }
+  if (pageName === 'annual') { loadAnnualGoals(); }
   if (pageName === 'cycle') loadCycle();
   if (pageName === 'principles') loadPrinciples();
   if (pageName === 'selfknow') loadSelfKnowledge();
@@ -1594,7 +1600,63 @@ function adjustGoalProgress(id, current) {
 function deleteGoal(id, title) {
   if (!confirm('确定删除「' + title + '」？')) return;
   api('/api/goals/strategic/' + id, { method: 'DELETE' })
-    .then(function() { loadStrategicGoals(); showToast('已删除'); });
+    .then(function() { loadStrategicGoals(); loadAnnualGoals(); showToast('已删除'); });
+}
+
+// ─── 年度目标列表页 ───
+
+async function loadAnnualGoals() {
+  var res = await api('/api/goals/strategic');
+  var container = document.getElementById('annualGoalList');
+  if (!res.goals || res.goals.length === 0) {
+    container.innerHTML = '<div class="empty">暂无年度目标<br><button class="btn btn-primary" style="margin-top:12px;" onclick="addNewGoal()">➕ 新增目标</button></div>';
+    return;
+  }
+  container.innerHTML = res.goals.map(function(g, i) {
+    return '<div class="card" draggable="true" data-id="' + g.id + '" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" style="margin:8px 0;cursor:grab;">' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<span style="color:var(--ink-dim);font-size:16px;cursor:grab;">⠿</span>' +
+      '<div style="flex:1;">' +
+      '<div style="font-size:14px;font-weight:600;">' + g.title + '</div>' +
+      '<div style="font-size:11px;color:var(--ink-muted);margin-top:2px;">' + (g.description || g.category) + '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;">' +
+      '<div style="flex:1;height:4px;background:var(--surface-1);border-radius:2px;overflow:hidden;">' +
+      '<div style="height:100%;width:' + g.progress_pct + '%;background:var(--accent);border-radius:2px;"></div></div>' +
+      '<span style="font-size:11px;font-weight:600;color:var(--accent);">' + Math.round(g.progress_pct) + '%</span>' +
+      '</div></div>' +
+      '<div style="display:flex;flex-direction:column;gap:4px;">' +
+      '<button onclick="adjustGoalProgress(' + g.id + ',' + g.progress_pct + ')" style="padding:4px 8px;background:var(--surface-1);border:none;border-radius:4px;font-size:10px;cursor:pointer;">📊</button>' +
+      '<button onclick="editGoal(' + g.id + ',\'' + g.title.replace(/'/g, "\\'") + '\',\'' + (g.description||'').replace(/'/g, "\\'") + '\',' + g.progress_pct + ')" style="padding:4px 8px;background:var(--surface-1);border:none;border-radius:4px;font-size:10px;cursor:pointer;">✏️</button>' +
+      '<button onclick="deleteGoal(' + g.id + ',\'' + g.title.replace(/'/g, "\\'") + '\')" style="padding:4px 8px;background:var(--surface-1);border:none;border-radius:4px;font-size:10px;cursor:pointer;color:var(--danger);">🗑️</button>' +
+      '</div></div></div>';
+  }).join('');
+}
+
+function addNewGoal() {
+  var title = prompt('目标名称：');
+  if (!title) return;
+  var desc = prompt('目标描述（可选）：') || '';
+  api('/api/goals/strategic', {
+    method: 'POST',
+    body: JSON.stringify({ goals: [{ title: title, description: desc, category: 'custom', priority: 99, progress_pct: 0, status: 'active' }] })
+  }).then(function() { loadAnnualGoals(); loadStrategicGoals(); showToast('已添加'); });
+}
+
+// ─── 拖拽排序 ───
+var dragId = null;
+function dragStart(e) { dragId = e.target.closest('[data-id]').dataset.id; e.dataTransfer.effectAllowed = 'move'; }
+function dragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function dragDrop(e) {
+  e.preventDefault();
+  var target = e.target.closest('[data-id]');
+  if (!target || target.dataset.id === dragId) return;
+  // 交换优先级
+  var fromId = parseInt(dragId), toId = parseInt(target.dataset.id);
+  api('/api/goals/strategic/' + fromId, { method: 'PUT', body: JSON.stringify({ priority: 0 }) });
+  api('/api/goals/strategic/' + toId, { method: 'PUT', body: JSON.stringify({ priority: 1 }) }).then(function() {
+    loadAnnualGoals();
+  });
+  dragId = null;
 }
 
 async function initDefaultGoals() {
