@@ -534,11 +534,12 @@ class EnhancedProfileData(BaseModel):
 def index(request: Request):
     try:
         return templates.TemplateResponse("index_mobile.html", {"request": request})
-    except TypeError:
-        return templates.TemplateResponse(request=request, name="index_mobile.html")
-    except Exception as e:
-        from fastapi.responses import PlainTextResponse
-        return PlainTextResponse(f"Template error: {str(e)}")
+    except Exception:
+        try:
+            return templates.TemplateResponse(request, "index_mobile.html")
+        except Exception as e:
+            from fastapi.responses import PlainTextResponse
+            return PlainTextResponse(f"Template error: {str(e)}")
 
 
 # ─── 认证路由 ───
