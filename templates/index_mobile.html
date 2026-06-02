@@ -1441,9 +1441,27 @@ async function doTabGenerate(tab, feedback) {
 }
 
 function showFeedbackInput(tab) {
-  var feedback = prompt('输入建议或调整方向，让 LLM 生成更符合你需求的内容：');
-  if (feedback !== null && feedback.trim()) {
-    doTabGenerate(tab, feedback.trim());
+  var tabEl = document.getElementById('tab-' + tab);
+  // 移除已有的输入框
+  var old = tabEl.querySelector('.feedback-input-bar');
+  if (old) { old.remove(); return; }
+
+  var bar = document.createElement('div');
+  bar.className = 'feedback-input-bar';
+  bar.style.cssText = 'display:flex;gap:6px;margin-top:12px;align-items:center;';
+  bar.innerHTML =
+    '<input id="feedbackInput-' + tab + '" type="text" placeholder="输入建议，如：下午多留休息时间..." ' +
+    'style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r-md);font-size:13px;" ' +
+    'onkeydown="if(event.key===\'Enter\'){submitFeedback(\'' + tab + '\')}">' +
+    '<button onclick="submitFeedback(\'' + tab + '\')" style="padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-md);font-size:13px;font-weight:600;cursor:pointer;">生成</button>';
+  tabEl.appendChild(bar);
+  document.getElementById('feedbackInput-' + tab).focus();
+}
+
+function submitFeedback(tab) {
+  var input = document.getElementById('feedbackInput-' + tab);
+  if (input && input.value.trim()) {
+    doTabGenerate(tab, input.value.trim());
   }
 }
 
