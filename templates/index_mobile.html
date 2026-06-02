@@ -1158,6 +1158,13 @@ function showToast(msg) {
 // ─── 启动 ───
 init();
 
+// 每分钟刷新时间线指示线
+setInterval(function() {
+  if (document.getElementById('todayTimeline') && document.getElementById('todayTimeline').children.length > 0) {
+    loadTodaySchedule();
+  }
+}, 60000);
+
 // ═══════════════════════════════════════════════
 // ─── Agent 功能 ───
 // ═══════════════════════════════════════════════
@@ -1512,14 +1519,59 @@ async function loadTodaySchedule() {
       container.innerHTML = '<div style="text-align:center;color:var(--text2);padding:16px;">暂无时间段</div>';
       return;
     }
-    container.innerHTML = blocks.map(b => {
+
+    // 计算当前时间在时间线中的位置
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // 找到第一个时间块的开始分钟和最后一个的结束分钟
+    function timeToMin(t) { const p = t.split(':'); return parseInt(p[0]) * 60 + parseInt(p[1]); }
+    const firstMin = timeToMin(blocks[0].start);
+    let totalMin = firstMin;
+    blocks.forEach(b => { totalMin = Math.max(totalMin, timeToMin(b.start) + b.duration_min); });
+    const span = totalMin - firstMin || 1;
+
+    // 构建 HTML
+    let html = '<div class="timeline-container">';
+    blocks.forEach(b => {
       const typeClass = b.type.includes('focus') ? 'bar-focus' : b.type.includes('rest') ? 'bar-rest' : b.type === 'life' ? 'bar-life' : 'bar-sleep';
       const typeIcon = b.type.includes('focus') ? '🔵' : b.type.includes('rest') ? '🟢' : b.type === 'life' ? '🟠' : '⚫';
-      return `<div class="timeline-block">
-        <div class="timeline-time">${b.start}</div>
-        <div class="timeline-bar ${typeClass}">${typeIcon} ${b.label || b.type} <span style="margin-left:auto;font-size:11px;">${b.duration_min}分钟</span></div>
-      </div>`;
-    }).join('');
+      const blockStart = timeToMin(b.start);
+      const blockEnd = blockStart + b.duration_min;
+
+      // 计算这个块的高度占比（基于时间跨度）
+      const heightPct = (b.duration_min / span) * 100;
+      const minHeight = Math.max(36, heightPct * 2.5);
+
+      // 判断当前时间是否在这个块内
+      const isCurrent = nowMinutes >= blockStart && nowMinutes < blockEnd;
+      const nowOffset = isCurrent ? ((nowMinutes - blockStart) / b.duration_min) * 100 : -1;
+
+      html += '<div class="timeline-block" style="min-height:' + minHeight + 'px;">';
+      html += '<div class="timeline-time">' + b.start + '</div>';
+      html += '<div class="timeline-bar ' + typeClass + '" style="min-height:' + (minHeight - 4) + 'px;">';
+      html += typeIcon + ' ' + (b.label || b.type);
+      html += ' <span style="margin-left:auto;font-size:11px;">' + b.duration_min + '分钟</span>';
+
+      // 如果当前时间在这个块内，显示红色指示线
+      if (isCurrent) {
+        html += '<div class="now-line" style="top:' + nowOffset + '%;"></div>';
+      }
+
+      html += '</div></div>';
+    });
+
+    // 如果当前时间在所有块之前或之后，显示在容器顶部或底部
+    if (nowMinutes < firstMin) {
+      const topPct = 0;
+      html = '<div class="timeline-container" style="position:relative;">' +
+        '<div class="now-line" style="top:' + topPct + 'px;"></div>' + html.slice('<div class="timeline-container">'.length);
+    } else if (nowMinutes >= totalMin) {
+      html += '<div style="position:relative;"><div class="now-line" style="position:relative;margin-top:4px;"></div></div>';
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
   } catch(e) {}
 }
 

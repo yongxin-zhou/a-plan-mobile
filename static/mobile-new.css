@@ -569,3 +569,72 @@ html, body {
   to { opacity: 1; transform: translateY(0); }
 }
 .card { animation: fadeIn 0.2s ease; }
+
+/* === 日程时间线 === */
+.timeline-block {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 6px;
+  position: relative;
+}
+.timeline-time {
+  width: 42px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-align: right;
+  padding-top: 8px;
+  flex-shrink: 0;
+}
+.timeline-bar {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  position: relative;
+  overflow: hidden;
+}
+.bar-focus { background: var(--tint-blue); color: var(--ink-blue); border-left: 3px solid var(--ink-blue); }
+.bar-rest { background: var(--tint-green); color: var(--ink-green); border-left: 3px solid var(--ink-green); }
+.bar-life { background: var(--tint-orange); color: var(--ink-orange); border-left: 3px solid var(--ink-orange); }
+.bar-sleep { background: var(--surface-2); color: var(--ink-muted); border-left: 3px solid var(--ink-dim); }
+
+/* 当前时间指示线 */
+.now-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--danger);
+  z-index: 5;
+  pointer-events: none;
+}
+.now-line::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+.now-line::after {
+  content: '现在';
+  position: absolute;
+  left: 12px;
+  top: -8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--danger);
+  white-space: nowrap;
+}
+.timeline-container {
+  position: relative;
+}
