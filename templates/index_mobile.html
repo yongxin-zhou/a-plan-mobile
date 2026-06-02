@@ -53,10 +53,7 @@
       <span class="nav-icon">🤖</span>
       <span class="nav-label">Agent</span>
     </div>
-    <div class="nav-item" onclick="switchPage('week', this)">
-      <span class="nav-icon">📅</span>
-      <span class="nav-label">周计划</span>
-    </div>
+
     <div class="nav-item" onclick="switchPage('annual', this)">
       <span class="nav-icon">🎯</span>
       <span class="nav-label">年度</span>
@@ -131,15 +128,7 @@
         <div id="milestonesList"></div>
         <button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="decomposeMonthly()">🤖 AI 分解月度目标</button>
       </div>
-      <!-- 日程可视化 -->
-      <div class="card" style="margin-top:12px;">
-        <div class="card-title">⏰ 今日日程</div>
-        <div id="todayTimeline"></div>
-        <div style="display:flex;gap:8px;margin-top:12px;">
-          <input id="genStartTime" type="time" value="08:00" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;">
-          <button class="btn btn-primary" style="flex:1;" onclick="generateDaily()">🤖 生成今日计划</button>
-        </div>
-      </div>
+      <!-- 日程已移至首页底部 --\>
     </div>
 
     <!-- 视图3：能量自查 (霍金斯能量表) -->
@@ -230,6 +219,18 @@
           <button class="quick-btn" onclick="showAddMemory()">➕ 新增</button>
         </div>
         <div id="memoryList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 今日日程（首页底部） -->
+  <div style="padding:8px 16px;">
+    <div class="card">
+      <div class="card-title">⏰ 今日日程</div>
+      <div id="todayTimeline"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <input id="genStartTime" type="time" value="08:00" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:var(--r-md);font-size:13px;">
+        <button class="btn btn-primary" style="flex:1;font-size:13px;padding:8px 12px;" onclick="generateDaily()">🤖 生成今日计划</button>
       </div>
     </div>
   </div>
@@ -400,6 +401,9 @@
         </div>
         <div style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="switchPage('agreements', null)">
           🤝 夫妻约定 <span style="float:right;color:var(--text2);">›</span>
+        </div>
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="switchPage('week', null)">
+          📅 周计划 <span style="float:right;color:var(--text2);">›</span>
         </div>
         <div style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="showSettings()">
           ⚙️ 设置 <span style="float:right;color:var(--text2);">›</span>
