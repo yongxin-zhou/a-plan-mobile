@@ -506,6 +506,138 @@ body {
   color: var(--text2);
 }
 .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+/* === Agent 样式 === */
+.chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.chip:active { background: var(--accent-light); border-color: var(--accent); }
+
+.msg-bubble {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+.msg-user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.msg-agent {
+  align-self: flex-start;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+.msg-time {
+  font-size: 10px;
+  color: var(--text2);
+  margin-top: 4px;
+  text-align: center;
+}
+.typing-dots {
+  display: flex; gap: 4px; padding: 12px 16px;
+}
+.typing-dots span {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text2); opacity: 0.4;
+  animation: blink 1.4s infinite both;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,80%,100%{opacity:0.4} 40%{opacity:1} }
+
+.goal-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.goal-card:active { border-color: var(--accent); }
+.goal-progress-ring {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: var(--accent);
+  position: relative;
+}
+.goal-progress-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 4px solid var(--border);
+}
+.goal-progress-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 4px solid var(--accent);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+}
+
+.timeline-block {
+  display: flex;
+  align-items: stretch;
+  margin-bottom: 2px;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 44px;
+}
+.timeline-time {
+  width: 52px;
+  font-size: 11px;
+  color: var(--text2);
+  padding: 8px 4px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.timeline-bar {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 0 8px 8px 0;
+}
+.bar-focus { background: #e8f0fe; color: #1a56db; }
+.bar-rest { background: #e6f7e6; color: #2d8a2d; }
+.bar-life { background: #fef3e2; color: #b8860b; }
+.bar-sleep { background: #f0f0f0; color: #666; }
+
+.milestone-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.milestone-item:last-child { border-bottom: none; }
+.milestone-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  margin-left: 8px;
+}
+.status-pending { background: #f0f0f0; color: #888; }
+.status-in_progress { background: #fff3cd; color: #856404; }
+.status-done { background: #d4edda; color: #155724; }
 </style>
 </head>
 <body>
@@ -548,7 +680,11 @@ body {
 
   <!-- 底部导航 -->
   <div class="bottom-nav">
-    <div class="nav-item active" onclick="switchPage('week', this)">
+    <div class="nav-item active" onclick="switchPage('agent', this)">
+      <span class="nav-icon">🤖</span>
+      <span class="nav-label">Agent</span>
+    </div>
+    <div class="nav-item" onclick="switchPage('week', this)">
       <span class="nav-icon">📅</span>
       <span class="nav-label">周计划</span>
     </div>
@@ -566,8 +702,61 @@ body {
     </div>
   </div>
 
+  <!-- ========== Agent 页面 ========== -->
+  <div id="page-agent" class="page active">
+    <!-- Agent 视图切换 -->
+    <div class="top-bar">
+      <div class="top-bar-title">🤖 Agent</div>
+      <div style="display:flex;gap:8px;">
+        <button class="top-bar-btn" id="btn-agent-chat" onclick="switchAgentView('chat')" style="background:var(--accent-light);">💬</button>
+        <button class="top-bar-btn" id="btn-agent-goals" onclick="switchAgentView('goals')">🎯</button>
+      </div>
+    </div>
+
+    <!-- 视图1：对话界面 -->
+    <div id="agent-chat-view" style="display:flex;flex-direction:column;height:calc(100vh - 130px);">
+      <!-- 快捷操作 -->
+      <div style="padding:8px 16px;display:flex;gap:8px;overflow-x:auto;flex-shrink:0;">
+        <button class="chip" onclick="agentQuickAction('生成今日计划')">📅 生成今日计划</button>
+        <button class="chip" onclick="agentQuickAction('查看目标进度')">📊 目标进度</button>
+        <button class="chip" onclick="agentQuickAction('调整计划')">✏️ 调整计划</button>
+        <button class="chip" onclick="agentQuickAction('分解月度目标')">🎯 分解月度</button>
+      </div>
+      <!-- 消息区域 -->
+      <div id="agentMessages" style="flex:1;overflow-y:auto;padding:8px 16px;display:flex;flex-direction:column;gap:10px;">
+        <div style="text-align:center;color:var(--text2);font-size:13px;padding:20px;">开始和 Agent 对话吧</div>
+      </div>
+      <!-- 输入栏 -->
+      <div style="padding:8px 16px;background:var(--card);border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0;">
+        <button id="voiceBtn" style="width:40px;height:40px;border-radius:50%;border:none;background:var(--bg);font-size:20px;cursor:pointer;" onmousedown="startVoice()" onmouseup="stopVoice()">🎤</button>
+        <input id="agentInput" type="text" placeholder="输入消息..." style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:20px;font-size:15px;outline:none;" onkeydown="if(event.key==='Enter')sendAgentMsg()">
+        <button onclick="sendAgentMsg()" style="width:40px;height:40px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:18px;cursor:pointer;">↑</button>
+      </div>
+    </div>
+
+    <!-- 视图2：战略仪表盘 -->
+    <div id="agent-goals-view" style="display:none;padding:12px 16px;">
+      <div id="goalsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;"></div>
+      <!-- 月度里程碑 -->
+      <div class="card">
+        <div class="card-title">📋 本月里程碑</div>
+        <div id="milestonesList"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="decomposeMonthly()">🤖 AI 分解月度目标</button>
+      </div>
+      <!-- 日程可视化 -->
+      <div class="card" style="margin-top:12px;">
+        <div class="card-title">⏰ 今日日程</div>
+        <div id="todayTimeline"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <input id="genStartTime" type="time" value="08:00" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;">
+          <button class="btn btn-primary" style="flex:1;" onclick="generateDaily()">🤖 生成今日计划</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ========== 周计划页面 ========== -->
-  <div id="page-week" class="page active">
+  <div id="page-week" class="page">
     <div class="top-bar">
       <div class="top-bar-title">📅 周计划</div>
       <div style="display:flex;gap:8px;">
@@ -899,6 +1088,8 @@ function showLogin() {
 function showApp() {
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('appPage').style.display = 'block';
+  loadAgentHistory();
+  loadStrategicGoals();
   initWeek();
   loadSettings();
 }
@@ -912,6 +1103,7 @@ function switchPage(pageName, navEl) {
   if (navEl) navEl.classList.add('active');
 
   // 加载数据
+  if (pageName === 'agent') { loadAgentHistory(); loadStrategicGoals(); }
   if (pageName === 'annual') loadAnnual();
   if (pageName === 'cycle') loadCycle();
   if (pageName === 'principles') loadPrinciples();
@@ -1373,6 +1565,284 @@ function showToast(msg) {
 
 // ─── 启动 ───
 init();
-</script>
+
+// ═══════════════════════════════════════════════
+// ─── Agent 功能 ───
+// ═══════════════════════════════════════════════
+
+let agentView = 'chat';
+
+function switchAgentView(view) {
+  agentView = view;
+  document.getElementById('agent-chat-view').style.display = view === 'chat' ? 'flex' : 'none';
+  document.getElementById('agent-goals-view').style.display = view === 'goals' ? 'block' : 'none';
+  document.getElementById('btn-agent-chat').style.background = view === 'chat' ? 'var(--accent-light)' : 'var(--bg)';
+  document.getElementById('btn-agent-goals').style.background = view === 'goals' ? 'var(--accent-light)' : 'var(--bg)';
+  if (view === 'goals') { loadStrategicGoals(); loadTodaySchedule(); }
+}
+
+// ─── Agent 对话 ───
+
+async function loadAgentHistory() {
+  try {
+    const res = await api('/api/agent/history?limit=50');
+    const container = document.getElementById('agentMessages');
+    if (!res.messages || res.messages.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:var(--text2);font-size:13px;padding:20px;">开始和 Agent 对话吧</div>';
+      return;
+    }
+    container.innerHTML = '';
+    res.messages.forEach(m => appendAgentMsg(m.role, m.content, m.created_at));
+    container.scrollTop = container.scrollHeight;
+  } catch(e) {}
+}
+
+function appendAgentMsg(role, content, time) {
+  const container = document.getElementById('agentMessages');
+  const div = document.createElement('div');
+  div.style.display = 'flex';
+  div.style.flexDirection = 'column';
+  if (role === 'user') div.style.alignItems = 'flex-end';
+  else div.style.alignItems = 'flex-start';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble ' + (role === 'user' ? 'msg-user' : 'msg-agent');
+  bubble.textContent = content;
+  div.appendChild(bubble);
+
+  if (time) {
+    const t = document.createElement('div');
+    t.className = 'msg-time';
+    t.textContent = new Date(time).toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+    div.appendChild(t);
+  }
+  container.appendChild(div);
+}
+
+function showTyping() {
+  const container = document.getElementById('agentMessages');
+  const div = document.createElement('div');
+  div.id = 'typingIndicator';
+  div.className = 'typing-dots';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+async function sendAgentMsg() {
+  const input = document.getElementById('agentInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  appendAgentMsg('user', msg, new Date().toISOString());
+  showTyping();
+
+  // 检测意图
+  let intent = 'chat';
+  if (msg.includes('生成') && (msg.includes('计划') || msg.includes('日程'))) intent = 'plan_adjust';
+  if (msg.includes('调整') || msg.includes('修改') || msg.includes('改')) intent = 'plan_adjust';
+  if (msg.includes('目标') || msg.includes('进度') || msg.includes('里程碑')) intent = 'goal_update';
+
+  try {
+    const res = await api('/api/agent/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message: msg, intent: intent })
+    });
+    hideTyping();
+    appendAgentMsg('assistant', res.reply, new Date().toISOString());
+  } catch(e) {
+    hideTyping();
+    appendAgentMsg('assistant', '请求失败：' + e.message, new Date().toISOString());
+  }
+}
+
+async function agentQuickAction(action) {
+  const input = document.getElementById('agentInput');
+  if (action === '生成今日计划') {
+    const today = new Date().toISOString().slice(0, 10);
+    appendAgentMsg('user', '生成今日计划', new Date().toISOString());
+    showTyping();
+    try {
+      const startTime = document.getElementById('genStartTime')?.value || '08:00';
+      const res = await api('/api/agent/generate-daily', {
+        method: 'POST',
+        body: JSON.stringify({ date: today, start_time: startTime })
+      });
+      hideTyping();
+      if (res.ok) {
+        let reply = `✅ 今日计划已生成\n\n${res.summary}\n\n专注: ${res.focus_minutes}分钟 | 休息: ${res.rest_minutes}分钟 | 生活: ${res.life_minutes}分钟`;
+        appendAgentMsg('assistant', reply, new Date().toISOString());
+        loadTodaySchedule();
+      } else {
+        appendAgentMsg('assistant', '生成失败：' + (res.error || '未知错误'), new Date().toISOString());
+      }
+    } catch(e) {
+      hideTyping();
+      appendAgentMsg('assistant', '请求失败：' + e.message, new Date().toISOString());
+    }
+  } else if (action === '分解月度目标') {
+    decomposeMonthly();
+  } else {
+    input.value = action;
+    sendAgentMsg();
+  }
+}
+
+// ─── 语音输入 ───
+let recognition = null;
+
+function startVoice() {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    showToast('浏览器不支持语音输入');
+    return;
+  }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'zh-CN';
+  recognition.interimResults = false;
+  recognition.onresult = (e) => {
+    const text = e.results[0][0].transcript;
+    document.getElementById('agentInput').value = text;
+    stopVoice();
+  };
+  recognition.onerror = () => stopVoice();
+  recognition.onend = () => stopVoice();
+  recognition.start();
+  document.getElementById('voiceBtn').style.background = 'var(--danger)';
+  document.getElementById('voiceBtn').textContent = '⏹';
+}
+
+function stopVoice() {
+  if (recognition) { recognition.stop(); recognition = null; }
+  document.getElementById('voiceBtn').style.background = 'var(--bg)';
+  document.getElementById('voiceBtn').textContent = '🎤';
+}
+
+// ─── 战略目标仪表盘 ───
+
+async function loadStrategicGoals() {
+  try {
+    const res = await api('/api/goals/strategic');
+    const grid = document.getElementById('goalsGrid');
+    if (!res.goals || res.goals.length === 0) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text2);padding:20px;">暂无战略目标<br><button class="btn btn-primary" style="margin-top:12px;" onclick="initDefaultGoals()">初始化4个战略目标</button></div>';
+      return;
+    }
+    grid.innerHTML = res.goals.map(g => `
+      <div class="goal-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="font-size:14px;font-weight:600;">${g.title}</div>
+          <div style="font-size:20px;font-weight:700;color:var(--accent);">${Math.round(g.progress_pct)}%</div>
+        </div>
+        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+          <div style="height:100%;width:${g.progress_pct}%;background:var(--accent);border-radius:2px;transition:width 0.3s;"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text2);margin-top:6px;">${g.category} · 优先级${g.priority}</div>
+      </div>
+    `).join('');
+
+    // 加载月度里程碑
+    loadMonthlyMilestones();
+  } catch(e) {}
+}
+
+async function initDefaultGoals() {
+  const defaults = {
+    goals: [
+      { title: '商学', description: '商业知识体系构建', category: 'learning', priority: 1, progress_pct: 0, status: 'active' },
+      { title: '四书五经元认知', description: '传统智慧与元认知修炼', category: 'philosophy', priority: 2, progress_pct: 0, status: 'active' },
+      { title: '英语达到移民工作水准', description: '英语能力提升至工作级别', category: 'skill', priority: 3, progress_pct: 0, status: 'active' },
+      { title: 'AI 学习应用', description: 'AI 技术学习与实践应用', category: 'learning', priority: 4, progress_pct: 0, status: 'active' }
+    ]
+  };
+  try {
+    await api('/api/goals/strategic', { method: 'POST', body: JSON.stringify(defaults) });
+    loadStrategicGoals();
+    showToast('已初始化4个战略目标');
+  } catch(e) { showToast('初始化失败'); }
+}
+
+async function loadMonthlyMilestones() {
+  try {
+    const res = await api('/api/goals/monthly-milestones');
+    const list = document.getElementById('milestonesList');
+    if (!res.milestones || res.milestones.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:var(--text2);padding:12px;font-size:13px;">暂无本月里程碑</div>';
+      return;
+    }
+    list.innerHTML = res.milestones.map(m => {
+      const statusClass = 'status-' + m.status;
+      const statusText = {pending:'待开始',in_progress:'进行中',done:'已完成'}[m.status] || m.status;
+      let actions = '';
+      try { actions = JSON.parse(m.target_actions).join('、'); } catch(e) { actions = m.target_actions; }
+      return `<div class="milestone-item">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span>${m.title}</span>
+          <span class="milestone-status ${statusClass}">${statusText}</span>
+        </div>
+        ${actions ? '<div style="font-size:12px;color:var(--text2);margin-top:4px;">📋 ' + actions + '</div>' : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+async function decomposeMonthly() {
+  appendAgentMsg('user', '分解本月目标', new Date().toISOString());
+  showTyping();
+  try {
+    const res = await api('/api/agent/decompose-monthly', { method: 'POST' });
+    hideTyping();
+    if (res.ok) {
+      appendAgentMsg('assistant', `✅ 已生成${res.count}个月度里程碑`, new Date().toISOString());
+      loadMonthlyMilestones();
+    } else {
+      appendAgentMsg('assistant', '分解失败：' + (res.error || '未知错误'), new Date().toISOString());
+    }
+  } catch(e) {
+    hideTyping();
+    appendAgentMsg('assistant', '请求失败：' + e.message, new Date().toISOString());
+  }
+}
+
+// ─── 日程可视化 ───
+
+async function loadTodaySchedule() {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const res = await api('/api/schedule/daily/' + today);
+    const container = document.getElementById('todayTimeline');
+    if (!res.schedule) {
+      container.innerHTML = '<div style="text-align:center;color:var(--text2);padding:16px;font-size:13px;">今日暂无计划，点击下方按钮生成</div>';
+      return;
+    }
+    let blocks = [];
+    try { blocks = JSON.parse(res.schedule.blocks_json); } catch(e) {}
+    if (blocks.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:var(--text2);padding:16px;">暂无时间段</div>';
+      return;
+    }
+    container.innerHTML = blocks.map(b => {
+      const typeClass = b.type.includes('focus') ? 'bar-focus' : b.type.includes('rest') ? 'bar-rest' : b.type === 'life' ? 'bar-life' : 'bar-sleep';
+      const typeIcon = b.type.includes('focus') ? '🔵' : b.type.includes('rest') ? '🟢' : b.type === 'life' ? '🟠' : '⚫';
+      return `<div class="timeline-block">
+        <div class="timeline-time">${b.start}</div>
+        <div class="timeline-bar ${typeClass}">${typeIcon} ${b.label || b.type} <span style="margin-left:auto;font-size:11px;">${b.duration_min}分钟</span></div>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+async function generateDaily() {
+  const today = new Date().toISOString().slice(0, 10);
+  const startTime = document.getElementById('genStartTime').value || '08:00';
+  agentQuickAction('生成今日计划');
+}
+
+// ─── Toast ───
 </body>
 </html>

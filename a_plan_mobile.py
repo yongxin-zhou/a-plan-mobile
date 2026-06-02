@@ -220,6 +220,98 @@ class CoupleAgreement(Base):
     created_at = Column(DateTime, default=datetime.now)
 
 
+# ─── Agent 模型（手机端 AI 时间管理） ───
+
+class StrategicGoal(Base):
+    """年度战略目标"""
+    __tablename__ = "strategic_goals"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    year = Column(Integer, nullable=False)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, default="")
+    category = Column(String(50), default="learning")  # learning/health/skill/philosophy
+    priority = Column(Integer, default=1)  # 1-4
+    progress_pct = Column(Float, default=0.0)
+    status = Column(String(20), default="active")  # active/paused/completed
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class MonthlyMilestone(Base):
+    """月度里程碑"""
+    __tablename__ = "monthly_milestones"
+    id = Column(Integer, primary_key=True, index=True)
+    strategic_goal_id = Column(Integer, ForeignKey("strategic_goals.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    year = Column(Integer, nullable=False)
+    month = Column(Integer, nullable=False)
+    title = Column(String(200), default="")
+    target_actions = Column(Text, default="[]")  # JSON array
+    actual_actions = Column(Text, default="[]")  # JSON array
+    progress_pct = Column(Float, default=0.0)
+    status = Column(String(20), default="pending")  # pending/in_progress/done
+    created_at = Column(DateTime, default=datetime.now)
+
+
+class DailySchedule(Base):
+    """LLM 生成的日计划"""
+    __tablename__ = "daily_schedules"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    date = Column(Date, nullable=False, index=True)
+    generated_at = Column(DateTime, nullable=True)
+    start_time = Column(String(5), default="08:00")
+    blocks_json = Column(Text, default="[]")
+    focus_minutes = Column(Integer, default=0)
+    life_minutes = Column(Integer, default=0)
+    rest_minutes = Column(Integer, default=0)
+    linked_goals = Column(Text, default="[]")
+    user_feedback = Column(Text, default="")
+    adjustment_count = Column(Integer, default=0)
+
+
+class AgentConversation(Base):
+    """Agent 对话记录"""
+    __tablename__ = "agent_conversations"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    role = Column(String(20), nullable=False)  # user/assistant/system
+    content = Column(Text, nullable=False)
+    intent = Column(String(50), default="")  # chat/plan_adjust/goal_update/voice
+    tokens_used = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.now)
+
+
+class EnhancedUserProfile(Base):
+    """增强用户画像"""
+    __tablename__ = "enhanced_user_profiles"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    habits_json = Column(Text, default="{}")
+    preferences_json = Column(Text, default="{}")
+    learning_patterns_json = Column(Text, default="{}")
+    time_allocation_json = Column(Text, default='{"rest":8,"life":8,"work":8}')
+    strengths_json = Column(Text, default="[]")
+    growth_areas_json = Column(Text, default="[]")
+    agent_notes = Column(Text, default="")
+    last_analyzed_at = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class GoalProgress(Base):
+    """目标进度记录"""
+    __tablename__ = "goal_progress"
+    id = Column(Integer, primary_key=True, index=True)
+    strategic_goal_id = Column(Integer, ForeignKey("strategic_goals.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    recorded_date = Column(Date, nullable=False, index=True)
+    progress_pct = Column(Float, default=0.0)
+    evidence = Column(Text, default="")
+    source = Column(String(30), default="manual")  # manual/agent/daily_checkin
+    created_at = Column(DateTime, default=datetime.now)
+
+
 # ─── FastAPI 应用 ───
 from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
@@ -357,6 +449,54 @@ class AnnualGoalData(BaseModel):
     category: str = ""
     content: str = ""
     order_index: int = 0
+
+
+# ─── Agent Pydantic Schemas ───
+
+class StrategicGoalData(BaseModel):
+    title: str
+    description: str = ""
+    category: str = "learning"
+    priority: int = 1
+    progress_pct: float = 0.0
+    status: str = "active"
+
+class StrategicGoalBatch(BaseModel):
+    goals: List[StrategicGoalData]
+
+class MonthlyMilestoneData(BaseModel):
+    strategic_goal_id: int
+    title: str = ""
+    target_actions: str = "[]"
+    actual_actions: str = "[]"
+    progress_pct: float = 0.0
+    status: str = "pending"
+
+class MonthlyMilestoneBatch(BaseModel):
+    milestones: List[MonthlyMilestoneData]
+
+class GoalProgressData(BaseModel):
+    strategic_goal_id: int
+    progress_pct: float = 0.0
+    evidence: str = ""
+    source: str = "manual"
+
+class AgentChatRequest(BaseModel):
+    message: str
+    intent: str = "chat"  # chat/plan_adjust/goal_update
+
+class DailyScheduleRequest(BaseModel):
+    date: str  # YYYY-MM-DD
+    start_time: str = "08:00"
+
+class EnhancedProfileData(BaseModel):
+    habits_json: str = "{}"
+    preferences_json: str = "{}"
+    learning_patterns_json: str = "{}"
+    time_allocation_json: str = '{"rest":8,"life":8,"work":8}'
+    strengths_json: str = "[]"
+    growth_areas_json: str = "[]"
+    agent_notes: str = ""
 
 
 # ═══════════════════════════════════════════════
@@ -961,6 +1101,579 @@ async def save_schedule(date_str: str, request: Request, db: Session = Depends(g
 
     db.commit()
     return {"ok": True}
+
+
+# ═══════════════════════════════════════════════
+# ─── Agent API（手机端 AI 时间管理） ───
+# ═══════════════════════════════════════════════
+
+# ─── 战略目标 CRUD ───
+
+@app.get("/api/goals/strategic")
+def get_strategic_goals(year: int = None, db: Session = Depends(get_db)):
+    if year is None:
+        year = datetime.now().year
+    goals = db.query(StrategicGoal).filter(StrategicGoal.year == year)\
+        .order_by(StrategicGoal.priority).all()
+    return {"goals": [{
+        "id": g.id, "title": g.title, "description": g.description,
+        "category": g.category, "priority": g.priority,
+        "progress_pct": g.progress_pct, "status": g.status,
+    } for g in goals]}
+
+
+@app.post("/api/goals/strategic")
+def save_strategic_goals(batch: StrategicGoalBatch, db: Session = Depends(get_db)):
+    uid = (get_current_user(Request, db) or {"id": None}).get("id") if False else None
+    # 获取当前用户
+    year = datetime.now().year
+    # 删除旧的，插入新的
+    db.query(StrategicGoal).filter(StrategicGoal.year == year).delete()
+    for i, g in enumerate(batch.goals):
+        db.add(StrategicGoal(
+            year=year, title=g.title, description=g.description,
+            category=g.category, priority=i + 1,
+            progress_pct=g.progress_pct, status=g.status,
+        ))
+    db.commit()
+    return {"ok": True}
+
+
+@app.get("/api/goals/progress")
+def get_goal_progress(goal_id: int = None, days: int = 90, db: Session = Depends(get_db)):
+    q = db.query(GoalProgress)
+    if goal_id:
+        q = q.filter(GoalProgress.strategic_goal_id == goal_id)
+    cutoff = date.today() - timedelta(days=days)
+    records = q.filter(GoalProgress.recorded_date >= cutoff)\
+        .order_by(GoalProgress.recorded_date).all()
+    return {"progress": [{
+        "id": r.id, "strategic_goal_id": r.strategic_goal_id,
+        "recorded_date": r.recorded_date.isoformat(),
+        "progress_pct": r.progress_pct, "evidence": r.evidence,
+        "source": r.source,
+    } for r in records]}
+
+
+@app.post("/api/goals/progress")
+def record_goal_progress(data: GoalProgressData, db: Session = Depends(get_db)):
+    uid = None
+    try:
+        auth = Request.headers.get("Authorization") if hasattr(Request, 'headers') else None
+    except:
+        pass
+    gp = GoalProgress(
+        strategic_goal_id=data.strategic_goal_id,
+        recorded_date=date.today(),
+        progress_pct=data.progress_pct,
+        evidence=data.evidence,
+        source=data.source,
+    )
+    db.add(gp)
+    # 同步更新 StrategicGoal 的 progress_pct
+    sg = db.query(StrategicGoal).get(data.strategic_goal_id)
+    if sg:
+        sg.progress_pct = data.progress_pct
+    db.commit()
+    return {"ok": True}
+
+
+# ─── 月度里程碑 ───
+
+@app.get("/api/goals/monthly-milestones")
+def get_monthly_milestones(year: int = None, month: int = None, db: Session = Depends(get_db)):
+    if year is None:
+        year = datetime.now().year
+    if month is None:
+        month = datetime.now().month
+    milestones = db.query(MonthlyMilestone).filter(
+        MonthlyMilestone.year == year, MonthlyMilestone.month == month
+    ).all()
+    return {"milestones": [{
+        "id": m.id, "strategic_goal_id": m.strategic_goal_id,
+        "title": m.title, "target_actions": m.target_actions,
+        "actual_actions": m.actual_actions,
+        "progress_pct": m.progress_pct, "status": m.status,
+    } for m in milestones]}
+
+
+@app.post("/api/goals/monthly-milestones")
+def save_monthly_milestones(batch: MonthlyMilestoneBatch, db: Session = Depends(get_db)):
+    year = datetime.now().year
+    month = datetime.now().month
+    db.query(MonthlyMilestone).filter(
+        MonthlyMilestone.year == year, MonthlyMilestone.month == month
+    ).delete()
+    for m in batch.milestones:
+        db.add(MonthlyMilestone(
+            strategic_goal_id=m.strategic_goal_id,
+            year=year, month=month, title=m.title,
+            target_actions=m.target_actions, actual_actions=m.actual_actions,
+            progress_pct=m.progress_pct, status=m.status,
+        ))
+    db.commit()
+    return {"ok": True}
+
+
+# ─── 增强用户画像 ───
+
+@app.get("/api/profile/enhanced")
+def get_enhanced_profile(db: Session = Depends(get_db)):
+    # 尝试从 JWT 获取用户
+    uid = None
+    try:
+        import jwt as _jwt
+        auth_header = None
+        # 由于 FastAPI 的 Depends 机制，这里简化处理
+    except:
+        pass
+    profile = None
+    if uid:
+        profile = db.query(EnhancedUserProfile).filter(EnhancedUserProfile.user_id == uid).first()
+    if not profile:
+        profile = db.query(EnhancedUserProfile).first()
+    if not profile:
+        return {"profile": None}
+    return {"profile": {
+        "habits_json": profile.habits_json,
+        "preferences_json": profile.preferences_json,
+        "learning_patterns_json": profile.learning_patterns_json,
+        "time_allocation_json": profile.time_allocation_json,
+        "strengths_json": profile.strengths_json,
+        "growth_areas_json": profile.growth_areas_json,
+        "agent_notes": profile.agent_notes,
+    }}
+
+
+@app.put("/api/profile/enhanced")
+def update_enhanced_profile(data: EnhancedProfileData, db: Session = Depends(get_db)):
+    profile = db.query(EnhancedUserProfile).first()
+    if not profile:
+        profile = EnhancedUserProfile(user_id=1)
+        db.add(profile)
+    profile.habits_json = data.habits_json
+    profile.preferences_json = data.preferences_json
+    profile.learning_patterns_json = data.learning_patterns_json
+    profile.time_allocation_json = data.time_allocation_json
+    profile.strengths_json = data.strengths_json
+    profile.growth_areas_json = data.growth_areas_json
+    profile.agent_notes = data.agent_notes
+    db.commit()
+    return {"ok": True}
+
+
+# ─── 日计划（LLM 生成） ───
+
+@app.get("/api/schedule/daily/{date_str}")
+def get_daily_schedule(date_str: str, db: Session = Depends(get_db)):
+    try:
+        target_date = date.fromisoformat(date_str)
+    except:
+        raise HTTPException(400, "日期格式错误，应为 YYYY-MM-DD")
+    schedule = db.query(DailySchedule).filter(
+        DailySchedule.date == target_date
+    ).first()
+    if not schedule:
+        return {"schedule": None}
+    return {"schedule": {
+        "id": schedule.id, "date": schedule.date.isoformat(),
+        "generated_at": schedule.generated_at.isoformat() if schedule.generated_at else None,
+        "start_time": schedule.start_time,
+        "blocks_json": schedule.blocks_json,
+        "focus_minutes": schedule.focus_minutes,
+        "life_minutes": schedule.life_minutes,
+        "rest_minutes": schedule.rest_minutes,
+        "linked_goals": schedule.linked_goals,
+        "adjustment_count": schedule.adjustment_count,
+    }}
+
+
+@app.post("/api/schedule/daily/{date_str}")
+def save_daily_schedule(date_str: str, blocks_json: str = "[]",
+                        start_time: str = "08:00", db: Session = Depends(get_db)):
+    try:
+        target_date = date.fromisoformat(date_str)
+    except:
+        raise HTTPException(400, "日期格式错误")
+    schedule = db.query(DailySchedule).filter(DailySchedule.date == target_date).first()
+    if not schedule:
+        schedule = DailySchedule(date=target_date)
+        db.add(schedule)
+    schedule.blocks_json = blocks_json
+    schedule.start_time = start_time
+    schedule.generated_at = datetime.now()
+    # 计算各类时间
+    try:
+        blocks = json.loads(blocks_json) if blocks_json else []
+    except:
+        blocks = []
+    focus = sum(b.get("duration_min", 0) for b in blocks if "focus" in b.get("type", ""))
+    rest = sum(b.get("duration_min", 0) for b in blocks if "rest" in b.get("type", ""))
+    life = sum(b.get("duration_min", 0) for b in blocks if b.get("type") == "life")
+    schedule.focus_minutes = focus
+    schedule.rest_minutes = rest
+    schedule.life_minutes = life
+    db.commit()
+    return {"ok": True}
+
+
+# ─── Agent 对话 ───
+
+@app.get("/api/agent/history")
+def get_agent_history(limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
+    msgs = db.query(AgentConversation).order_by(AgentConversation.id.desc())\
+        .offset(offset).limit(limit).all()
+    msgs.reverse()  # 按时间正序
+    return {"messages": [{
+        "id": m.id, "role": m.role, "content": m.content,
+        "intent": m.intent, "created_at": m.created_at.isoformat(),
+    } for m in msgs]}
+
+
+@app.post("/api/agent/chat")
+def agent_chat(req: AgentChatRequest, db: Session = Depends(get_db)):
+    """与 Agent 对话，支持意图识别和计划调整"""
+    # 保存用户消息
+    user_msg = AgentConversation(
+        user_id=1, role="user", content=req.message, intent=req.intent
+    )
+    db.add(user_msg)
+    db.commit()
+
+    # 构建上下文
+    recent = db.query(AgentConversation).order_by(AgentConversation.id.desc()).limit(10).all()
+    recent.reverse()
+
+    # 获取战略目标
+    goals = db.query(StrategicGoal).filter(
+        StrategicGoal.year == datetime.now().year,
+        StrategicGoal.status == "active"
+    ).all()
+    goals_text = "\n".join([f"- {g.title}（进度{g.progress_pct}%）" for g in goals]) or "暂无战略目标"
+
+    # 获取今日计划
+    today = date.today()
+    schedule = db.query(DailySchedule).filter(DailySchedule.date == today).first()
+    schedule_text = schedule.blocks_json if schedule else "今日暂无计划"
+
+    # 获取用户画像
+    profile = db.query(EnhancedUserProfile).first()
+    profile_text = profile.agent_notes if profile else "暂无用户画像"
+
+    # 构建 prompt
+    context = "\n".join([f"{'用户' if m.role == 'user' else '助手'}: {m.content}" for m in recent])
+
+    system_prompt = """你是A计划，永鑫的AI时间管理搭档。
+角色：理性分析师 + 实战参谋
+基调：专业、务实、坦诚
+
+核心职责：
+1. 将年度战略目标分解为可执行的月/周/日计划
+2. 根据每天开始工作的时间，生成当日时间安排
+3. 追踪目标进度，发现偏差时主动提醒
+4. 通过对话了解工作习惯，持续优化计划
+
+时间分配原则（8h/8h/8h）：
+- 休息（8h）：睡眠、午休、放松
+- 生活（8h）：家庭、育儿、家务、社交
+- 工作（8h）：职业工作 + 战略学习
+
+输出要求：中文，简洁，先结论后展开。涉及计划时输出JSON格式。"""
+
+    user_context = f"""当前战略目标：
+{goals_text}
+
+今日计划：{schedule_text}
+
+用户画像备注：{profile_text}
+
+对话历史：
+{context}
+
+用户说：{req.message}"""
+
+    # 调用 LLM
+    api_key = os.environ.get("LLM_API_KEY", "")
+    api_base = os.environ.get("LLM_API_BASE", "https://api.deepseek.com")
+    model = os.environ.get("LLM_MODEL", "deepseek-chat")
+
+    reply_text = ""
+    if api_key:
+        try:
+            import httpx
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_context}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1024,
+            }
+            with httpx.Client(timeout=30) as client:
+                resp = client.post(f"{api_base}/v1/chat/completions",
+                                   json=payload, headers=headers)
+                data = resp.json()
+                reply_text = data["choices"][0]["message"]["content"]
+        except Exception as e:
+            reply_text = f"LLM 调用失败：{str(e)}。请检查 LLM_API_KEY 配置。"
+    else:
+        reply_text = "LLM 未配置。请在设置中配置 LLM_API_KEY 后重试。"
+
+    # 保存助手回复
+    assistant_msg = AgentConversation(
+        user_id=1, role="assistant", content=reply_text, intent=req.intent
+    )
+    db.add(assistant_msg)
+    db.commit()
+
+    return {"reply": reply_text, "intent": req.intent}
+
+
+# ─── 一键生成今日计划 ───
+
+@app.post("/api/agent/generate-daily")
+def generate_daily_schedule(req: DailyScheduleRequest, db: Session = Depends(get_db)):
+    """LLM 一键生成今日日程"""
+    try:
+        target_date = date.fromisoformat(req.date)
+    except:
+        raise HTTPException(400, "日期格式错误")
+
+    # 获取战略目标
+    goals = db.query(StrategicGoal).filter(
+        StrategicGoal.year == target_date.year,
+        StrategicGoal.status == "active"
+    ).all()
+    goals_text = "\n".join([f"- {g.title}（优先级{g.priority}，进度{g.progress_pct}%）" for g in goals]) or "暂无"
+
+    # 获取月度里程碑
+    milestones = db.query(MonthlyMilestone).filter(
+        MonthlyMilestone.year == target_date.year,
+        MonthlyMilestone.month == target_date.month,
+        MonthlyMilestone.status != "done"
+    ).all()
+    milestones_text = "\n".join([f"- {m.title}" for m in milestones]) or "暂无"
+
+    # 获取用户画像
+    profile = db.query(EnhancedUserProfile).first()
+    alloc = json.loads(profile.time_allocation_json) if profile else {"rest": 8, "life": 8, "work": 8}
+
+    weekday_names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    weekday = weekday_names[target_date.weekday()]
+
+    system_prompt = """你是A计划的日程生成器。为永鑫生成精确的日程安排。
+
+输出严格JSON格式（不要包含markdown代码块标记）：
+{"blocks":[{"start":"HH:MM","duration_min":90,"type":"focus_90","label":"任务名","goal_id":null}],"summary":"安排说明"}
+
+type可选值：focus_90, focus_60, rest_15, rest_10, life, sleep
+规则：
+- 90分钟专注块之间必须有15分钟休息
+- 高难度任务放在精力最好的时段
+- 战略学习分散安排
+- 预留30分钟缓冲
+- 睡眠和生活时间按用户配置"""
+
+    user_prompt = f"""为永鑫生成{target_date.isoformat()}（{weekday}）的日程。
+
+开始工作时间：{req.start_time}
+时间分配：休息{alloc.get('rest',8)}h / 生活{alloc.get('life',8)}h / 工作{alloc.get('work',8)}h
+
+活跃战略目标：
+{goals_text}
+
+本月未完成里程碑：
+{milestones_text}
+
+请生成精确的日程JSON。"""
+
+    blocks = []
+    summary = ""
+
+    api_key = os.environ.get("LLM_API_KEY", "")
+    api_base = os.environ.get("LLM_API_BASE", "https://api.deepseek.com")
+    model = os.environ.get("LLM_MODEL", "deepseek-chat")
+
+    if api_key:
+        try:
+            import httpx
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "temperature": 0.3,
+                "max_tokens": 1024,
+            }
+            with httpx.Client(timeout=30) as client:
+                resp = client.post(f"{api_base}/v1/chat/completions",
+                                   json=payload, headers=headers)
+                data = resp.json()
+                reply = data["choices"][0]["message"]["content"]
+                # 清理可能的 markdown 代码块标记
+                reply = reply.strip()
+                if reply.startswith("```"):
+                    reply = reply.split("\n", 1)[-1]
+                if reply.endswith("```"):
+                    reply = reply.rsplit("```", 1)[0]
+                reply = reply.strip()
+                parsed = json.loads(reply)
+                blocks = parsed.get("blocks", [])
+                summary = parsed.get("summary", "")
+        except Exception as e:
+            summary = f"生成失败：{str(e)}"
+    else:
+        summary = "LLM 未配置，无法自动生成计划"
+
+    # 保存到数据库
+    schedule = db.query(DailySchedule).filter(DailySchedule.date == target_date).first()
+    if not schedule:
+        schedule = DailySchedule(date=target_date)
+        db.add(schedule)
+    schedule.blocks_json = json.dumps(blocks, ensure_ascii=False)
+    schedule.start_time = req.start_time
+    schedule.generated_at = datetime.now()
+    focus = sum(b.get("duration_min", 0) for b in blocks if "focus" in b.get("type", ""))
+    rest = sum(b.get("duration_min", 0) for b in blocks if "rest" in b.get("type", ""))
+    life = sum(b.get("duration_min", 0) for b in blocks if b.get("type") == "life")
+    schedule.focus_minutes = focus
+    schedule.rest_minutes = rest
+    schedule.life_minutes = life
+    schedule.linked_goals = json.dumps([g.id for g in goals])
+    db.commit()
+
+    # 保存到对话记录
+    db.add(AgentConversation(
+        user_id=1, role="user", content=f"生成{target_date.isoformat()}的计划",
+        intent="plan_adjust"
+    ))
+    db.add(AgentConversation(
+        user_id=1, role="assistant",
+        content=f"已生成{target_date.isoformat()}的日程。\n{summary}\n\n包含{len(blocks)}个时间段。",
+        intent="plan_adjust"
+    ))
+    db.commit()
+
+    return {
+        "ok": True,
+        "blocks": blocks,
+        "summary": summary,
+        "date": target_date.isoformat(),
+        "focus_minutes": focus,
+        "rest_minutes": rest,
+        "life_minutes": life,
+    }
+
+
+# ─── 月度目标分解 ───
+
+@app.post("/api/agent/decompose-monthly")
+def decompose_monthly(year: int = None, month: int = None, db: Session = Depends(get_db)):
+    """LLM 分解月度里程碑"""
+    if year is None:
+        year = datetime.now().year
+    if month is None:
+        month = datetime.now().month
+
+    goals = db.query(StrategicGoal).filter(
+        StrategicGoal.year == year, StrategicGoal.status == "active"
+    ).all()
+    if not goals:
+        return {"ok": False, "error": "请先设置战略目标"}
+
+    goals_text = "\n".join([f"- {g.title}（{g.description}，进度{g.progress_pct}%）" for g in goals])
+
+    # 已过月份的进展
+    past = db.query(MonthlyMilestone).filter(
+        MonthlyMilestone.year == year, MonthlyMilestone.month < month
+    ).all()
+    past_text = "\n".join([f"- {m.title}（{m.status}）" for m in past]) or "本月之前无记录"
+
+    system_prompt = """你是A计划的目标分解器。将年度战略目标分解为月度里程碑。
+
+输出严格JSON格式（不要包含markdown代码块标记）：
+{"milestones":[{"strategic_goal_id":X,"title":"里程碑标题","target_actions":["行动1","行动2"],"progress_pct":0,"status":"pending"}]}
+
+要求：
+- 每个战略目标分解为2-3个本月可验证的里程碑
+- 行动要具体可执行，避免"多学习"这类模糊表述
+- 考虑时间约束"""
+
+    user_prompt = f"""分解{year}年{month}月的里程碑。
+
+年度战略目标：
+{goals_text}
+
+已过月份进展：
+{past_text}
+
+请输出本月里程碑JSON。"""
+
+    milestones = []
+    api_key = os.environ.get("LLM_API_KEY", "")
+    api_base = os.environ.get("LLM_API_BASE", "https://api.deepseek.com")
+    model = os.environ.get("LLM_MODEL", "deepseek-chat")
+
+    if api_key:
+        try:
+            import httpx
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "temperature": 0.3,
+                "max_tokens": 1024,
+            }
+            with httpx.Client(timeout=30) as client:
+                resp = client.post(f"{api_base}/v1/chat/completions",
+                                   json=payload, headers=headers)
+                data = resp.json()
+                reply = data["choices"][0]["message"]["content"]
+                reply = reply.strip()
+                if reply.startswith("```"):
+                    reply = reply.split("\n", 1)[-1]
+                if reply.endswith("```"):
+                    reply = reply.rsplit("```", 1)[0]
+                reply = reply.strip()
+                parsed = json.loads(reply)
+                milestones = parsed.get("milestones", [])
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+    else:
+        return {"ok": False, "error": "LLM 未配置"}
+
+    # 保存到数据库
+    db.query(MonthlyMilestone).filter(
+        MonthlyMilestone.year == year, MonthlyMilestone.month == month
+    ).delete()
+    for m in milestones:
+        db.add(MonthlyMilestone(
+            strategic_goal_id=m.get("strategic_goal_id", goals[0].id),
+            year=year, month=month,
+            title=m.get("title", ""),
+            target_actions=json.dumps(m.get("target_actions", []), ensure_ascii=False),
+            progress_pct=m.get("progress_pct", 0),
+            status=m.get("status", "pending"),
+        ))
+    db.commit()
+
+    return {"ok": True, "milestones": milestones, "count": len(milestones)}
 
 
 # ─── 启动 ───
