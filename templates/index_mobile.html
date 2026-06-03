@@ -1184,8 +1184,13 @@ function showToast(msg) {
 window.onerror = function(msg, url, line) {
   console.error('JS Error:', msg, 'at line', line);
   document.title = 'ERROR: ' + msg;
+  var db = document.createElement('div');
+  db.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:#fff;padding:8px;z-index:99999;font-size:12px;';
+  db.textContent = 'JS Error: ' + msg + ' (line ' + line + ')';
+  document.body.appendChild(db);
 };
 init();
+console.log('A计划 JS loaded OK, init() called');
 
 // 每分钟刷新时间线指示线
 setInterval(function() {
