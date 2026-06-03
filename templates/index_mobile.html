@@ -13,6 +13,36 @@
 <link rel="stylesheet" href="/static/mobile-new.css?v=2">
 </head>
 <body>
+<!-- 调试面板 -->
+<div id="debugPanel" style="position:fixed;bottom:60px;left:8px;right:8px;background:rgba(0,0,0,0.85);color:#0f0;padding:10px;border-radius:8px;font-size:11px;font-family:monospace;z-index:99999;display:none;max-height:200px;overflow-y:auto;">
+  <div id="debugLog"></div>
+  <button onclick="document.getElementById('debugPanel').style.display='none'" style="position:absolute;top:4px;right:8px;background:none;color:#fff;border:none;font-size:16px;">✕</button>
+</div>
+<script>
+// 立即执行的调试脚本（在主JS之前）
+(function(){
+  var d = document.getElementById('debugPanel');
+  var l = document.getElementById('debugLog');
+  d.style.display = 'block';
+  function log(msg) { l.innerHTML += '<div>' + new Date().toLocaleTimeString() + ' ' + msg + '</div>'; d.scrollTop = d.scrollHeight; }
+  log('HTML loaded');
+  log('switchPage type: ' + typeof switchPage);
+  log('switchAgentView type: ' + typeof switchAgentView);
+
+  // 监听所有点击
+  document.addEventListener('click', function(e) {
+    var t = e.target;
+    var info = t.tagName + ' ' + (t.className || '') + ' ' + (t.onclick ? 'hasOnclick' : 'noOnclick');
+    // 向上找5层看有没有onclick
+    var el = t;
+    for (var i = 0; i < 5 && el; i++) {
+      if (el.onclick) { info += ' [parent' + i + ' hasOnclick]'; break; }
+      el = el.parentElement;
+    }
+    log('CLICK: ' + info);
+  }, true);
+})();
+</script>
 
 <!-- ========== 登录页面 ========== -->
 <div id="loginPage" class="login-page">
