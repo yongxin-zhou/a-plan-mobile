@@ -19,21 +19,33 @@
   <button onclick="document.getElementById('debugPanel').style.display='none'" style="position:absolute;top:4px;right:8px;background:none;color:#fff;border:none;font-size:16px;">✕</button>
 </div>
 <script>
-// 立即执行的调试脚本（在主JS之前）
+// 全局错误捕获（在主JS之前设置）
+window.onerror = function(msg, url, line, col, err) {
+  var el = document.getElementById('debugLog');
+  if (el) el.innerHTML += '<div style="color:#f44;">ERROR: ' + msg + ' (line ' + line + ')</div>';
+  var db = document.getElementById('debugPanel');
+  if (db) { db.style.display = 'block'; db.style.borderColor = 'red'; }
+};
+
+// 调试脚本
 (function(){
   var d = document.getElementById('debugPanel');
   var l = document.getElementById('debugLog');
   d.style.display = 'block';
   function log(msg) { l.innerHTML += '<div>' + new Date().toLocaleTimeString() + ' ' + msg + '</div>'; d.scrollTop = d.scrollHeight; }
   log('HTML loaded');
-  log('switchPage type: ' + typeof switchPage);
-  log('switchAgentView type: ' + typeof switchAgentView);
+
+  // 等主脚本加载后再检查
+  setTimeout(function() {
+    log('switchPage type: ' + typeof switchPage);
+    log('switchAgentView type: ' + typeof switchAgentView);
+    log('loadTodaySchedule type: ' + typeof loadTodaySchedule);
+  }, 100);
 
   // 监听所有点击
   document.addEventListener('click', function(e) {
     var t = e.target;
     var info = t.tagName + ' ' + (t.className || '') + ' ' + (t.onclick ? 'hasOnclick' : 'noOnclick');
-    // 向上找5层看有没有onclick
     var el = t;
     for (var i = 0; i < 5 && el; i++) {
       if (el.onclick) { info += ' [parent' + i + ' hasOnclick]'; break; }
@@ -1211,14 +1223,6 @@ function showToast(msg) {
 }
 
 // ─── 启动 ───
-window.onerror = function(msg, url, line) {
-  console.error('JS Error:', msg, 'at line', line);
-  document.title = 'ERROR: ' + msg;
-  var db = document.createElement('div');
-  db.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:#fff;padding:8px;z-index:99999;font-size:12px;';
-  db.textContent = 'JS Error: ' + msg + ' (line ' + line + ')';
-  document.body.appendChild(db);
-};
 init();
 console.log('A计划 JS loaded OK, init() called');
 
