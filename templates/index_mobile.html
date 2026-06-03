@@ -6,8 +6,11 @@
 <title>A计划</title>
 <meta name="theme-color" content="#b8860b">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link rel="manifest" href="/static/manifest.json">
-<link rel="stylesheet" href="/static/mobile-new.css">
+<link rel="stylesheet" href="/static/mobile-new.css?v=2">
 </head>
 <body>
 
@@ -589,10 +592,10 @@ function showLogin() {
 function showApp() {
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('appPage').style.display = 'block';
-  loadAgentHistory();
-  loadStrategicGoals();
-  initWeek();
-  loadSettings();
+  try { loadAgentHistory(); } catch(e) { console.error(e); }
+  try { loadStrategicGoals(); } catch(e) { console.error(e); }
+  try { initWeek(); } catch(e) { console.error(e); }
+  try { loadSettings(); } catch(e) { console.error(e); }
 }
 
 function switchPage(pageName, navEl) {
@@ -1175,6 +1178,10 @@ function showToast(msg) {
 }
 
 // ─── 启动 ───
+window.onerror = function(msg, url, line) {
+  console.error('JS Error:', msg, 'at line', line);
+  document.title = 'ERROR: ' + msg;
+};
 init();
 
 // 每分钟刷新时间线指示线
