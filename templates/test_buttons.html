@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body>
+<div id="appPage">
+  <div class="bottom-nav" style="position:fixed;bottom:0;left:0;right:0;height:50px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-around;">
+    <div onclick="switchPage('a')" style="padding:10px;cursor:pointer;">A</div>
+    <div onclick="switchPage('b')" style="padding:10px;cursor:pointer;">B</div>
+    <div onclick="switchPage('c')" style="padding:10px;cursor:pointer;">C</div>
+  </div>
+  <div id="page-a" class="page" style="display:block;padding:20px;">Page A content</div>
+  <div id="page-b" class="page" style="display:none;padding:20px;">Page B content</div>
+  <div id="page-c" class="page" style="display:none;padding:20px;">Page C content</div>
+</div>
+<script>
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  document.getElementById('page-' + name).style.display = 'block';
+}
+</script>
+</body></html>

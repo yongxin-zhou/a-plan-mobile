@@ -93,6 +93,9 @@
 
     <!-- 视图1：对话界面 -->
     <div id="agent-chat-view" style="display:flex;flex-direction:column;height:calc(100vh - 130px);">
+      <!-- 消息区域（Agent 对话用） -->
+      <div id="agentMessages" style="flex:1;overflow-y:auto;padding:8px 16px;display:none;"></div>
+      <div id="typingIndicator" style="display:none;padding:8px 16px;font-size:12px;color:var(--ink-muted);">思考中...</div>
       <!-- 快捷操作 Tab -->
       <div style="padding:8px 16px;display:flex;gap:6px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid var(--border);">
         <button class="chip" id="chip-daily" onclick="switchActionTab('daily')" style="font-size:12px;padding:6px 10px;">📅 今日计划</button>
@@ -814,7 +817,7 @@ async function loadAnnual() {
 }
 
 function renderAnnual() {
-  const container = document.getElementById('annualList');
+  const container = document.getElementById('annualGoalList');
   if (!annualItems.length) {
     container.innerHTML = '<div class="empty"><div class="empty-icon">🎯</div><div>暂无年度目标，点击右上角添加</div></div>';
     return;
